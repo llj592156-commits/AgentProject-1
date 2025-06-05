@@ -1,0 +1,23 @@
+[project]
+name = "langgraph-template-travel-planner"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "jinja2>=3.1.6",
+    "langchain>=0.3.25",
+    "langchain-openai>=0.3.19",
+    "langgraph>=0.4.8",
+    "pydantic>=2.11.5",
+    "python-dateutil>=2.9.0.post0",
+    "types-pyyaml>=6.0.12.20250516",
+]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["travel_planner"]
+package-dir = {"" = "src"}
