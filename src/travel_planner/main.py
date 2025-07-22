@@ -9,6 +9,7 @@ from travel_planner.settings.settings_handler import AppSettings
 from langgraph.checkpoint.base import BaseCheckpointSaver
 from langchain_core.runnables import RunnableConfig
 from langgraph.checkpoint.memory import MemorySaver
+from dotenv import load_dotenv
 
 def get_travel_planner_graph():
     prompt_templates = PromptTemplates.read_from_yaml()
@@ -34,7 +35,9 @@ class TravelPlannerOrchestrator:
 
 if __name__ == "__main__":
     # Example usage
+    load_dotenv()
     checkpointer = MemorySaver()
+
     orchestrator = TravelPlannerOrchestrator(checkpointer=checkpointer)
     
     initial_state = TravelPlannerState(
@@ -53,4 +56,4 @@ if __name__ == "__main__":
     thread_id = str(uuid.uuid4())
     config = RunnableConfig({"configurable": {"thread_id": thread_id}})
     
-    asyncio.run(orchestrator.ainvoke(config, initial_state))
+    response = asyncio.run(orchestrator.ainvoke(config, initial_state))
