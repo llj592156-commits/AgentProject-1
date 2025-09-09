@@ -7,8 +7,8 @@ from travel_planner.helpers.general_utils import read_yaml
 
 
 class OpenAISettings(BaseModel):
-    small_model: str
     large_model: str
+    mini_model: str
     temperature: float = 0.0
     timeout: Optional[int] = Field(default=15, description="Timeout in seconds")
 

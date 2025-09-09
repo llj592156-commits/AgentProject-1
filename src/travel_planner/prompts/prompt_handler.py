@@ -20,13 +20,17 @@ def read_yaml_and_parse_chat_prompt(yaml_path: Path) -> ChatPromptTemplate:
 
 
 class PromptTemplates(BaseModel):
-    amadeus_hotel_search: ChatPromptTemplate
-
+    trip_params_extraction: ChatPromptTemplate
+    fix_trip_params_extraction: ChatPromptTemplate
+    
     @classmethod
     def read_from_yaml(cls) -> "PromptTemplates":
         yaml_dir = Path(__file__).parent / "yaml"
         return cls(
-            amadeus_hotel_search=read_yaml_and_parse_chat_prompt(
-                yaml_dir / "amadeus_hotel_search_params.yaml"
+            trip_params_extraction=read_yaml_and_parse_chat_prompt(
+                yaml_dir / "trip_params_extraction.yaml"
+            ),
+            fix_trip_params_extraction=read_yaml_and_parse_chat_prompt(
+                yaml_dir / "fix_trip_params_extraction.yaml"
             )
         )

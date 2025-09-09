@@ -1,7 +1,7 @@
 
 import uuid
 from travel_planner.graphs.travel_planner_graph import TravelPlannerGraph
-from travel_planner.helpers.llm_utils import get_available_llm_models
+from travel_planner.helpers.llm_utils import get_available_llms
 from travel_planner.models.state import TravelPlannerState
 from travel_planner.nodes.node_factory import NodeFactory
 from travel_planner.prompts.prompt_handler import PromptTemplates
@@ -14,10 +14,10 @@ from dotenv import load_dotenv
 def get_travel_planner_graph():
     prompt_templates = PromptTemplates.read_from_yaml()
     settings = AppSettings.read_from_yaml()
-    openai_models = get_available_llm_models(settings=settings.openai)
+    llm_models = get_available_llms(settings=settings.openai)
     node_factory = NodeFactory(
         prompt_templates=prompt_templates,
-        openai_models=openai_models
+        llm_models=llm_models
     )
     graph = TravelPlannerGraph(node_factory=node_factory)
     return graph.build_graph()
@@ -41,16 +41,8 @@ if __name__ == "__main__":
     orchestrator = TravelPlannerOrchestrator(checkpointer=checkpointer)
     
     initial_state = TravelPlannerState(
-        origin="Berlin",
-        destination="Paris",
-        date_from="2025-07-10",
-        date_to="2025-07-15",
-        budget=1000.0,
-        interests=["culture", "food"],
-        pax=2,
-        hotel_search_api_params=None,
+        user_prompt="Plan a trip from Berlin to Paris"
     )
-    
     
     import asyncio
     thread_id = str(uuid.uuid4())

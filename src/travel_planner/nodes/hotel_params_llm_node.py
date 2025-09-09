@@ -1,6 +1,6 @@
 import math
-from travel_planner.helpers.llm_utils import invoke_llm_with_structured_output
-from travel_planner.models.available_openai_models import OpenAIModels
+from travel_planner.helpers.llm_utils import invoke_llm
+from travel_planner.models.available_llm_models import LLMs
 from travel_planner.nodes.base_node import BaseNode
 from travel_planner.models.state import HotelAPIParams, TravelPlannerState
 from travel_planner.prompts.prompt_handler import PromptTemplates
@@ -12,10 +12,10 @@ class HotelParamsLLMNode(BaseNode):
     Uses an LLM to fill Amadeus hotel-search parameters from the
     (validated) trip state.  Output is written into `state.api_params`.
     """
-    def __init__(self, prompt_templates: PromptTemplates, openai_models: OpenAIModels):
+    def __init__(self, prompt_templates: PromptTemplates, llm_models: LLMs):
         super().__init__()
         self.prompt_templates = prompt_templates
-        self.openai_models = openai_models
+        self.llm_models = llm_models
     
     async def async_run(self, state: TravelPlannerState) -> TravelPlannerState:  # type: ignore[override]
         # Parse dates from string to datetime objects
@@ -36,10 +36,10 @@ class HotelParamsLLMNode(BaseNode):
         )
         
         # Call the helper that wraps your favourite LLM and validates against HotelAPIParams
-        hotel_search_api_params: HotelAPIParams = await invoke_llm_with_structured_output(
+        hotel_search_api_params: HotelAPIParams = await invoke_llm(
             prompt_value=prompt_value,
             response_model=HotelAPIParams,
-            llm=self.openai_models.gpt_4_1,
+            llm=self.llm_models.gpt_4_1,
         )
 
         state.hotel_search_api_params = hotel_search_api_params

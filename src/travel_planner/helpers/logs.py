@@ -1,7 +1,7 @@
 import logging
 import sys
 
-def setup_logging(level: int = logging.INFO, name: str = "travel_planner") -> logging.Logger:
+def get_logger(level: int = logging.INFO, name: str = "travel_planner") -> logging.Logger:
     """
     Configures and returns a logger with the given name.
     Ensures that multiple calls don't duplicate handlers.
@@ -28,16 +28,3 @@ def setup_logging(level: int = logging.INFO, name: str = "travel_planner") -> lo
         logger.propagate = False
 
     return logger
-
-
-def get_logger(name: str = "travel_planner") -> logging.Logger:
-    """
-    Gets the logger by name. Assumes it's already configured.
-
-    Parameters:
-        name (str): Logger name to retrieve.
-
-    Returns:
-        logging.Logger: Logger instance.
-    """
-    return logging.getLogger(name)
