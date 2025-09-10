@@ -6,7 +6,6 @@ from travel_planner.nodes.base_node import BaseNode
 from travel_planner.models.state import TravelPlannerState, TravelParams
 from travel_planner.helpers.llm_utils import invoke_llm
 from travel_planner.prompts.prompt_handler import PromptTemplates
-from travel_planner.settings.settings_handler import AppSettings
 
 
 class ExtractTripParamsNode(BaseNode):
@@ -25,10 +24,7 @@ class ExtractTripParamsNode(BaseNode):
         prompt_value = self.prompt_templates.trip_params_extraction.format_prompt(
             user_message=state.user_prompt
         )
-        # Append user message to history
-        user_message = prompt_value.to_messages()[1]
-        state.messages.append(user_message)
-
+        
         # Extract travel parameters
         travel_params = await invoke_llm(
             prompt_value=prompt_value,
@@ -55,6 +51,7 @@ class ExtractTripParamsNode(BaseNode):
         else:
             # All parameters successfully extracted
             state.travel_params = travel_params
+            state.missing_trip_params = []
             
             self.logger.info(
                 "Successfully extracted travel params: %s ➜ %s | %s → %s | €%.2f",

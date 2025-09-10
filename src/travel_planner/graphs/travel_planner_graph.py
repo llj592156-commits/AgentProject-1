@@ -18,11 +18,11 @@ class TravelPlannerGraph:
     # --------------------------------------------------------------------- #
     # Public helpers
     # --------------------------------------------------------------------- #
-    def build_graph(self) -> StateGraph:
-        """Create, connect and compile the StateGraph."""
+    def build_graph(self):
+        """Create, connect and compile the StateGraph with human-in-the-loop support."""
         graph = StateGraph(TravelPlannerState)
         graph = self._add_nodes(graph)
-        graph = self._connect_edges(graph)
+        graph = self._connect_edges(graph)       
         return graph
 
     # --------------------------------------------------------------------- #
@@ -31,10 +31,13 @@ class TravelPlannerGraph:
     def _add_nodes(self, graph: StateGraph) -> StateGraph:
         """Register each node held by NodeFactory into the graph."""
         # Collect Trip Params Node
-        graph.add_node(self._nf.collect_trip_params_node.node_id, self._nf.collect_trip_params_node.async_run)
+        graph.add_node(self._nf.extract_trip_params_node.node_id, self._nf.extract_trip_params_node.async_run)
         
         # Fix Trip Params Node if necessary
         graph.add_node(self._nf.fix_trip_params_node.node_id, self._nf.fix_trip_params_node.async_run)
+        
+        # Human Input Node for collecting missing information
+        graph.add_node(self._nf.trip_params_human_input_node.node_id, self._nf.trip_params_human_input_node.async_run)
         
         # Register Hotel Params LLM Node
         graph.add_node(self._nf.hotel_params_llm_node.node_id, self._nf.hotel_params_llm_node.async_run)
@@ -45,19 +48,48 @@ class TravelPlannerGraph:
 
     def _connect_edges(self, graph: StateGraph) -> StateGraph:
         """
-        Wire the ordered execution flow.
-        For now we keep it linear:
-            hotel_params  ─►  hotel_search
-        Extend this method as you add more nodes & branches.
+        Wire the ordered execution flow with human-in-the-loop capability.
         """
-        graph.set_entry_point(self._nf.collect_trip_params_node.node_id)
+        graph.set_entry_point(self._nf.extract_trip_params_node.node_id)
         
-        graph.add_edge(self._nf.collect_trip_params_node.node_id,
-                       self._nf.fix_trip_params_node.node_id)
+        # Add conditional edge based on whether trip params need fixing
+        graph.add_conditional_edges(
+            self._nf.extract_trip_params_node.node_id,
+            self._should_fix_trip_params,
+            {
+                self._nf.fix_trip_params_node.node_id: self._nf.fix_trip_params_node.node_id,
+                self._nf.hotel_params_llm_node.node_id: self._nf.hotel_params_llm_node.node_id
+            }
+        )
+        
+        # After fix attempt, go to human input for missing information
+        graph.add_edge(
+            self._nf.fix_trip_params_node.node_id,
+            self._nf.trip_params_human_input_node.node_id
+        )
+        
+        # After human input, go back to collect params to re-process with new info
+        graph.add_edge(
+            self._nf.trip_params_human_input_node.node_id,
+            self._nf.extract_trip_params_node.node_id
+        )
         
         graph.add_edge(self._nf.hotel_params_llm_node.node_id,
                           self._nf.hotel_search_node.node_id)
         
         graph.set_finish_point(self._nf.hotel_search_node.node_id)
         return graph
-    
+
+    def _should_fix_trip_params(self, state: TravelPlannerState) -> str:
+        """
+        Decision function to determine if trip parameters need fixing.
+        
+        Args:
+            state: Current state of the travel planner
+            
+        Returns:
+            "fix_params" if there are missing trip parameters, "continue" otherwise
+        """
+        if state.missing_trip_params and len(state.missing_trip_params) > 0:
+            return self._nf.fix_trip_params_node.node_id
+        return self._nf.hotel_params_llm_node.node_id
