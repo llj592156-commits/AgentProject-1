@@ -7,8 +7,6 @@ system_prompt: |
   - date_from: start date of travel (YYYY-MM-DD format)
   - date_to: end date of travel (YYYY-MM-DD format)
   - budget: total budget amount in EUR (extract number only)
-  
-  If any information is missing or unclear, set it to null.
 
 user_prompt: |
   Based on the user's message, extract the travel parameters.
