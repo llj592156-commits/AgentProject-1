@@ -1,6 +1,6 @@
 import reflex as rx
 
-from chat.state import QA, State
+from travel_planner.ui.chat.ui_state import QA, UIState
 from reflex.constants.colors import ColorType
 
 
@@ -52,11 +52,11 @@ def message(qa: QA) -> rx.Component:
 def chat() -> rx.Component:
     """List all the messages in a single conversation."""
     return rx.auto_scroll(
-        rx.foreach(State.selected_chat, message),
+        rx.foreach(UIState.selected_chat, message),
         flex="1",
         padding="8px",
     )
-
+1
 
 def action_bar() -> rx.Component:
     """The action bar to send a new message."""
@@ -77,8 +77,8 @@ def action_bar() -> rx.Component:
                     ),
                     rx.button(
                         "Send",
-                        loading=State.processing,
-                        disabled=State.processing,
+                        loading=UIState.processing,
+                        disabled=UIState.processing,
                         type="submit",
                     ),
                     max_width="50em",
@@ -86,7 +86,7 @@ def action_bar() -> rx.Component:
                     align_items="center",
                 ),
                 reset_on_submit=True,
-                on_submit=State.process_question,
+                on_submit=UIState.process_question,
             ),
             width="100%",
             padding_x="16px",

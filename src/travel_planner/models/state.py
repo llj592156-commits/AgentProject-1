@@ -1,10 +1,8 @@
 from datetime import date
-from typing import Annotated, Optional, TYPE_CHECKING
-from pydantic import BaseModel, Field, field_validator, model_validator
+from typing import Annotated, Optional
+from pydantic import BaseModel, Field
 from langgraph.graph.message import add_messages, BaseMessage
-
-if TYPE_CHECKING:
-    from travel_planner.models.router_models import RoutingDecision
+from travel_planner.models.router_models import RoutingDecision
 
 class HotelInfo(BaseModel):
     name: str
@@ -38,5 +36,5 @@ class TravelPlannerState(BaseModel):
     messages: Annotated[list[BaseMessage], add_messages] = []
     travel_params: TravelParams | None = None
     missing_trip_params: list[str] = []
-    routing_decision: Optional["RoutingDecision"] = None
-    chitchat_response: str | None = None
+    routing_decision: RoutingDecision | None = None
+    last_ai_message: str | None = None

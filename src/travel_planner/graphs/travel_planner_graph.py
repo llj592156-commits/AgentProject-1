@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from langgraph.graph import StateGraph
+from travel_planner.helpers.logs import get_logger
+from travel_planner.models.router_models import Routes
 from travel_planner.models.state import TravelPlannerState
 from travel_planner.nodes.node_factory import NodeFactory
 
@@ -14,7 +16,7 @@ class TravelPlannerGraph:
         # Create a shortcut, normally it's not a good practice but it will be used 
         # frequently in this class.
         self._nf = node_factory
-    
+        self.logger = get_logger()
     # --------------------------------------------------------------------- #
     # Public helpers
     # --------------------------------------------------------------------- #
@@ -67,9 +69,9 @@ class TravelPlannerGraph:
             self._nf.router_node.node_id,
             self._route_request,
             {
-                "travel_planner": self._nf.extract_trip_params_node.node_id,
-                "chitchat": self._nf.chitchat_node.node_id,
-                "escalation": self._nf.escalation_node.node_id
+               self._nf.extract_trip_params_node.node_id: self._nf.extract_trip_params_node.node_id,
+               self._nf.chitchat_node.node_id: self._nf.chitchat_node.node_id,
+               self._nf.escalation_node.node_id: self._nf.escalation_node.node_id
             }
         )
         
@@ -121,17 +123,16 @@ class TravelPlannerGraph:
         return self._nf.hotel_params_llm_node.node_id
 
     def _route_request(self, state: TravelPlannerState) -> str:
-        """
-        Decision function to route requests based on the router node's classification.
-        
-        Args:
-            state: Current state of the travel planner
-            
-        Returns:
-            The routing decision from the router node
-        """
-        if state.routing_decision is None:
+        if state.routing_decision is None or state.routing_decision.predicted_route == Routes.CHITCHAT:
             # Default to chitchat if no routing decision available
-            return "chitchat"
-        
-        return state.routing_decision.task_type
+            return self._nf.chitchat_node.node_id
+        elif state.routing_decision.predicted_route == Routes.ESCALATION:
+            return self._nf.escalation_node.node_id
+        elif state.routing_decision.predicted_route == Routes.TRAVEL_PLANNER:
+            return self._nf.extract_trip_params_node.node_id
+        else:
+            self.logger.error(
+                f"Unknown routing decision: {state.routing_decision.predicted_route}"
+                "Escalating"
+            )
+            return self._nf.escalation_node.node_id

@@ -13,8 +13,7 @@ system_prompt: |
      Examples: "I need to speak to an agent", "Can I talk to a human?", "This isn't working, get me help"
   
   Analyze the user's message carefully and provide:
-  - The appropriate task_type
-  - A confidence score (0.0 to 1.0) 
+  - The appropriate routing category (travel_planner, chitchat, or escalation)
   - A brief reasoning for your decision
 
 user_prompt: |

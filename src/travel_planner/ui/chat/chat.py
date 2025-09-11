@@ -2,7 +2,7 @@
 
 import reflex as rx
 
-from chat.components import chat, navbar
+from travel_planner.ui.chat.components import chat, navbar
 
 
 def index() -> rx.Component:

@@ -4,7 +4,7 @@ from typing import Type, TypeVar, cast
 from pydantic import BaseModel
 from langchain_openai import ChatOpenAI
 from langchain_core.prompt_values import PromptValue
-from langchain_core.messages import BaseMessage
+from langchain_core.messages import BaseMessage, AIMessage
 
 from travel_planner.models.available_llm_models import LLMs
 from travel_planner.settings.settings_handler import OpenAISettings
@@ -16,7 +16,7 @@ async def invoke_llm(
     llm: ChatOpenAI,
     response_model: Type[T] | None = None,
     messages_history: list[BaseMessage] = []
-) -> T | BaseMessage:
+) -> T | BaseMessage | AIMessage:
     """
     Uses OpenAI function calling / JSON mode to parse directly into a Pydantic model.
     This requires LangChain >= 0.1.14+ which supports .with_structured_output().
@@ -39,7 +39,8 @@ async def invoke_llm(
         result = await structured_llm.ainvoke(input=input_messages)
         return cast(T, result)
     else:
-        return await llm.ainvoke(input=input_messages)
+        result = await llm.ainvoke(input=input_messages)
+        return result
 
 
 def _create_models(settings: OpenAISettings, model_name: str) -> ChatOpenAI:

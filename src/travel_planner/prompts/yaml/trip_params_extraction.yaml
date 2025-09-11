@@ -11,7 +11,7 @@ system_prompt: |
   If any information is missing or unclear, set it to null.
 
 user_prompt: |
-  Based on the user's message, extract the travel parameters in YAML format.
+  Based on the user's message, extract the travel parameters.
 
   ## User message
   {{ user_message }}

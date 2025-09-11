@@ -1,0 +1,30 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug Reflex App",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "reflex",
+            "args": ["run"],
+            "cwd": "${workspaceFolder}/src/travel_planner/ui",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/src:${env:PYTHONPATH}"
+            }
+        },
+        {
+            "name": "Debug Travel Planner Main",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/travel_planner/main.py",
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/src:${env:PYTHONPATH}"
+            }
+        }
+    ]
+}

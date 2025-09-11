@@ -1,5 +1,5 @@
 import reflex as rx
-from chat.state import State
+from travel_planner.ui.chat.ui_state import UIState
 
 
 def sidebar_chat(chat: str) -> rx.Component:
@@ -12,14 +12,14 @@ def sidebar_chat(chat: str) -> rx.Component:
         rx.hstack(
             rx.button(
                 chat,
-                on_click=lambda: State.set_chat(chat),
+                on_click=lambda: UIState.set_chat(chat),
                 width="80%",
                 variant="surface",
             ),
             rx.button(
                 rx.icon(
                     tag="trash",
-                    on_click=State.delete_chat(chat),
+                    on_click=UIState.delete_chat(chat),
                     stroke_width=1,
                 ),
                 width="20%",
@@ -42,7 +42,7 @@ def sidebar(trigger) -> rx.Component:
                 rx.vstack(
                     rx.heading("Chats", color=rx.color("mauve", 11)),
                     rx.divider(),
-                    rx.foreach(State.chat_titles, lambda chat: sidebar_chat(chat)),
+                    rx.foreach(UIState.chat_titles, lambda chat: sidebar_chat(chat)),
                     align_items="stretch",
                     width="100%",
                 ),
@@ -77,19 +77,19 @@ def modal(trigger) -> rx.Component:
                     wrap="wrap",
                     width="100%",
                 ),
-                on_submit=State.create_chat,
+                on_submit=UIState.create_chat,
             ),
             background_color=rx.color("mauve", 1),
         ),
-        open=State.is_modal_open,
-        on_open_change=State.set_is_modal_open,
+        open=UIState.is_modal_open,
+        on_open_change=UIState.set_is_modal_open,
     )
 
 
 def navbar():
     return rx.hstack(
         rx.badge(
-            State.current_chat,
+            UIState.current_chat,
             rx.tooltip(
                 rx.icon("info", size=14),
                 content="The current selected chat.",

@@ -14,7 +14,7 @@ class EscalationNode(BaseNode):
     async def async_run(self, state: TravelPlannerState) -> TravelPlannerState:  # type: ignore[override]
         # Set escalation response
         escalation_message = "[..Contacting with Agent]"
-        state.chitchat_response = escalation_message
+        state.last_ai_message = escalation_message
         
         self.logger.info(f"{self.node_id} | User request escalated to human agent")
         

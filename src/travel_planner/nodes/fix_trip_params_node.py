@@ -31,5 +31,5 @@ class FixTripParamsNode(BaseNode):
         # Add user and ai message to the history
         state.messages.append(user_message)
         state.messages.append(ai_message)
-        
+        state.last_ai_message = str(ai_message.content)
         return state
