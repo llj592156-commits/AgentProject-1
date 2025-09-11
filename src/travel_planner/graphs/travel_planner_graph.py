@@ -30,6 +30,15 @@ class TravelPlannerGraph:
     # --------------------------------------------------------------------- #
     def _add_nodes(self, graph: StateGraph) -> StateGraph:
         """Register each node held by NodeFactory into the graph."""
+        # Router Node - entry point
+        graph.add_node(self._nf.router_node.node_id, self._nf.router_node.async_run)
+        
+        # Chitchat Node
+        graph.add_node(self._nf.chitchat_node.node_id, self._nf.chitchat_node.async_run)
+        
+        # Escalation Node  
+        graph.add_node(self._nf.escalation_node.node_id, self._nf.escalation_node.async_run)
+        
         # Collect Trip Params Node
         graph.add_node(self._nf.extract_trip_params_node.node_id, self._nf.extract_trip_params_node.async_run)
         
@@ -50,8 +59,25 @@ class TravelPlannerGraph:
         """
         Wire the ordered execution flow with human-in-the-loop capability.
         """
-        graph.set_entry_point(self._nf.extract_trip_params_node.node_id)
+        # Set router as entry point
+        graph.set_entry_point(self._nf.router_node.node_id)
         
+        # Add conditional edge from router based on routing decision
+        graph.add_conditional_edges(
+            self._nf.router_node.node_id,
+            self._route_request,
+            {
+                "travel_planner": self._nf.extract_trip_params_node.node_id,
+                "chitchat": self._nf.chitchat_node.node_id,
+                "escalation": self._nf.escalation_node.node_id
+            }
+        )
+        
+        # Chitchat and escalation nodes are end points
+        graph.set_finish_point(self._nf.chitchat_node.node_id)
+        graph.set_finish_point(self._nf.escalation_node.node_id)
+        
+        # Travel planner flow continues as before
         # Add conditional edge based on whether trip params need fixing
         graph.add_conditional_edges(
             self._nf.extract_trip_params_node.node_id,
@@ -93,3 +119,19 @@ class TravelPlannerGraph:
         if state.missing_trip_params and len(state.missing_trip_params) > 0:
             return self._nf.fix_trip_params_node.node_id
         return self._nf.hotel_params_llm_node.node_id
+
+    def _route_request(self, state: TravelPlannerState) -> str:
+        """
+        Decision function to route requests based on the router node's classification.
+        
+        Args:
+            state: Current state of the travel planner
+            
+        Returns:
+            The routing decision from the router node
+        """
+        if state.routing_decision is None:
+            # Default to chitchat if no routing decision available
+            return "chitchat"
+        
+        return state.routing_decision.task_type

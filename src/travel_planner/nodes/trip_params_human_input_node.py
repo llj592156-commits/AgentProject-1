@@ -8,7 +8,6 @@ class TripParamsHumanInputNode(BaseNode):
     Human-in-the-loop node that asks the user for missing travel parameters.
     This node will interrupt the execution and wait for human input.
     """
-    
     def __init__(self):
         super().__init__()
 

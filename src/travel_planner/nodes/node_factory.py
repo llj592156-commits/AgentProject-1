@@ -6,6 +6,9 @@ from travel_planner.nodes.fix_trip_params_node import FixTripParamsNode
 from travel_planner.nodes.trip_params_human_input_node import TripParamsHumanInputNode
 from travel_planner.nodes.hotel_params_llm_node import HotelParamsLLMNode
 from travel_planner.nodes.hotel_search_node import HotelSearchNode
+from travel_planner.nodes.router_node import RouterNode
+from travel_planner.nodes.chitchat_node import ChitchatNode
+from travel_planner.nodes.escalation_node import EscalationNode
 from travel_planner.prompts.prompt_handler import PromptTemplates
 
 
@@ -37,3 +40,15 @@ class NodeFactory:
     @cached_property
     def hotel_search_node(self) -> HotelSearchNode:
         return HotelSearchNode()
+
+    @cached_property
+    def router_node(self) -> RouterNode:
+        return RouterNode(prompt_templates=self.prompt_templates, llm_models=self.llm_models)
+
+    @cached_property 
+    def chitchat_node(self) -> ChitchatNode:
+        return ChitchatNode(prompt_templates=self.prompt_templates, llm_models=self.llm_models)
+
+    @cached_property
+    def escalation_node(self) -> EscalationNode:
+        return EscalationNode()
