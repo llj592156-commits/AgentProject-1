@@ -13,5 +13,8 @@ system_prompt: |
 user_prompt: |
   Based on the user's message, extract the travel parameters.
 
+  ## Today's date
+  {{ today }}
+
   ## User message
   {{ user_message }}

@@ -22,6 +22,7 @@ def read_yaml_and_parse_chat_prompt(yaml_path: Path) -> ChatPromptTemplate:
 class PromptTemplates(BaseModel):
     trip_params_extraction: ChatPromptTemplate
     fix_trip_params_extraction: ChatPromptTemplate
+    trip_planner: ChatPromptTemplate
     routing_decision: ChatPromptTemplate
     chitchat_response: ChatPromptTemplate
     
@@ -34,6 +35,9 @@ class PromptTemplates(BaseModel):
             ),
             fix_trip_params_extraction=read_yaml_and_parse_chat_prompt(
                 yaml_dir / "fix_trip_params_extraction.yaml"
+            ),
+            trip_planner=read_yaml_and_parse_chat_prompt(
+                yaml_dir / "trip_planner.yaml"
             ),
             routing_decision=read_yaml_and_parse_chat_prompt(
                 yaml_dir / "routing_decision.yaml"

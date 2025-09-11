@@ -49,12 +49,10 @@ class TravelPlannerGraph:
         
         # Human Input Node for collecting missing information
         graph.add_node(self._nf.trip_params_human_input_node.node_id, self._nf.trip_params_human_input_node.async_run)
+
+        # LLM Trip Planner Node
+        graph.add_node(self._nf.llm_trip_planner_node.node_id, self._nf.llm_trip_planner_node.async_run)
         
-        # Register Hotel Params LLM Node
-        graph.add_node(self._nf.hotel_params_llm_node.node_id, self._nf.hotel_params_llm_node.async_run)
-        
-        # Register Hotel Search Node
-        graph.add_node(self._nf.hotel_search_node.node_id, self._nf.hotel_search_node.async_run)
         return graph
 
     def _connect_edges(self, graph: StateGraph) -> StateGraph:
@@ -86,7 +84,7 @@ class TravelPlannerGraph:
             self._should_fix_trip_params,
             {
                 self._nf.fix_trip_params_node.node_id: self._nf.fix_trip_params_node.node_id,
-                self._nf.hotel_params_llm_node.node_id: self._nf.hotel_params_llm_node.node_id
+                self._nf.llm_trip_planner_node.node_id: self._nf.llm_trip_planner_node.node_id
             }
         )
         
@@ -101,11 +99,8 @@ class TravelPlannerGraph:
             self._nf.trip_params_human_input_node.node_id,
             self._nf.extract_trip_params_node.node_id
         )
-        
-        graph.add_edge(self._nf.hotel_params_llm_node.node_id,
-                          self._nf.hotel_search_node.node_id)
-        
-        graph.set_finish_point(self._nf.hotel_search_node.node_id)
+
+        graph.set_finish_point(self._nf.llm_trip_planner_node.node_id)
         return graph
 
     def _should_fix_trip_params(self, state: TravelPlannerState) -> str:
@@ -120,7 +115,7 @@ class TravelPlannerGraph:
         """
         if state.missing_trip_params and len(state.missing_trip_params) > 0:
             return self._nf.fix_trip_params_node.node_id
-        return self._nf.hotel_params_llm_node.node_id
+        return self._nf.llm_trip_planner_node.node_id
 
     def _route_request(self, state: TravelPlannerState) -> str:
         if state.routing_decision is None or state.routing_decision.predicted_route == Routes.CHITCHAT:

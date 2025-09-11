@@ -1,4 +1,5 @@
 
+from datetime import datetime
 from langchain.prompts import ChatPromptTemplate
 
 from travel_planner.models.available_llm_models import LLMs
@@ -22,7 +23,8 @@ class ExtractTripParamsNode(BaseNode):
     async def async_run(self, state: TravelPlannerState) -> TravelPlannerState:  # type: ignore[override]
         # Try to extract travel parameters using OpenAI structured output
         prompt_value = self.prompt_templates.trip_params_extraction.format_prompt(
-            user_message=state.user_prompt
+            user_message=state.user_prompt,
+            today=datetime.today()
         )
         
         # Extract travel parameters
