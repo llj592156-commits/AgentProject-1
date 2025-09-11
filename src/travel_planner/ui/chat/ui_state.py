@@ -207,6 +207,8 @@ class UIState(rx.State):
             # Simple if statement to handle continuation vs new conversation
             if self._is_continuation():
                 # Get continued result directly without streaming
+                travel_state.user_prompt = question  # Update prompt for continuation
+                await compiled_graph.aupdate_state(config, travel_state)
                 result = await compiled_graph.ainvoke(input=None, config=config)
                 result = TravelPlannerState(**result)
                 self._clear_interruption()
