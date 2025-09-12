@@ -5,6 +5,7 @@ class Routes(Enum):
     TRAVEL_PLANNER = "travel_planner"
     CHITCHAT = "chitchat"
     ESCALATION = "escalation"
+    TURKISH_AIRLINES = "turkish_airlines"
 
 class RoutingDecision(BaseModel):
     """Model for the router node to decide the task type"""

@@ -25,6 +25,7 @@ class PromptTemplates(BaseModel):
     trip_planner: ChatPromptTemplate
     routing_decision: ChatPromptTemplate
     chitchat_response: ChatPromptTemplate
+    turkish_airlines_response: ChatPromptTemplate
     
     @classmethod
     def read_from_yaml(cls) -> "PromptTemplates":
@@ -44,5 +45,8 @@ class PromptTemplates(BaseModel):
             ),
             chitchat_response=read_yaml_and_parse_chat_prompt(
                 yaml_dir / "chitchat_response.yaml"
+            ),
+            turkish_airlines_response=read_yaml_and_parse_chat_prompt(
+                yaml_dir / "turkish_airlines_response.yaml"
             )
         )

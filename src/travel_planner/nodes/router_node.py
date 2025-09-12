@@ -30,7 +30,7 @@ class RouterNode(BaseNode):
         routing_decision = await invoke_llm(
             prompt_value=prompt_value,
             response_model=RoutingDecision,
-            llm=self.llm_models.mini_model,
+            llm=self.llm_models.large_model,
             messages_history=state.messages
         )
         

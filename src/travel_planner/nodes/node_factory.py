@@ -8,6 +8,7 @@ from travel_planner.nodes.trip_params_human_input_node import TripParamsHumanInp
 from travel_planner.nodes.router_node import RouterNode
 from travel_planner.nodes.chitchat_node import ChitchatNode
 from travel_planner.nodes.escalation_node import EscalationNode
+from travel_planner.nodes.turkish_airlines_node import TurkishAirlinesNode
 from travel_planner.prompts.prompt_handler import PromptTemplates
 
 
@@ -40,6 +41,10 @@ class NodeFactory:
     @cached_property
     def escalation_node(self) -> EscalationNode:
         return EscalationNode()
+
+    @cached_property
+    def turkish_airlines_node(self) -> TurkishAirlinesNode:
+        return TurkishAirlinesNode(prompt_templates=self.prompt_templates, llm_models=self.llm_models)
 
     @cached_property
     def llm_trip_planner_node(self) -> LLMTripPlannerNode:

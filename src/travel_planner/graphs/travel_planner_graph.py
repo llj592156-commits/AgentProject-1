@@ -41,6 +41,9 @@ class TravelPlannerGraph:
         # Escalation Node  
         graph.add_node(self._nf.escalation_node.node_id, self._nf.escalation_node.async_run)
         
+        # Turkish Airlines Node
+        graph.add_node(self._nf.turkish_airlines_node.node_id, self._nf.turkish_airlines_node.async_run)
+        
         # Collect Trip Params Node
         graph.add_node(self._nf.extract_trip_params_node.node_id, self._nf.extract_trip_params_node.async_run)
         
@@ -69,13 +72,16 @@ class TravelPlannerGraph:
             {
                self._nf.extract_trip_params_node.node_id: self._nf.extract_trip_params_node.node_id,
                self._nf.chitchat_node.node_id: self._nf.chitchat_node.node_id,
-               self._nf.escalation_node.node_id: self._nf.escalation_node.node_id
+               self._nf.escalation_node.node_id: self._nf.escalation_node.node_id,
+               self._nf.turkish_airlines_node.node_id: self._nf.turkish_airlines_node.node_id
             }
         )
         
-        # Chitchat and escalation nodes are end points
+                # Chitchat, escalation, and Turkish Airlines nodes are end points
         graph.set_finish_point(self._nf.chitchat_node.node_id)
         graph.set_finish_point(self._nf.escalation_node.node_id)
+        graph.set_finish_point(self._nf.turkish_airlines_node.node_id)
+        graph.set_finish_point(self._nf.turkish_airlines_node.node_id)
         
         # Travel planner flow continues as before
         # Add conditional edge based on whether trip params need fixing
@@ -125,6 +131,8 @@ class TravelPlannerGraph:
             return self._nf.escalation_node.node_id
         elif state.routing_decision.predicted_route == Routes.TRAVEL_PLANNER:
             return self._nf.extract_trip_params_node.node_id
+        elif state.routing_decision.predicted_route == Routes.TURKISH_AIRLINES:
+            return self._nf.turkish_airlines_node.node_id
         else:
             self.logger.error(
                 f"Unknown routing decision: {state.routing_decision.predicted_route}"

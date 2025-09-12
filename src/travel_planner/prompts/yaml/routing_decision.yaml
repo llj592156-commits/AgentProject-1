@@ -12,8 +12,13 @@ system_prompt: |
   3. **escalation**: User explicitly wants to contact a human agent, needs specialized help, or is frustrated.
      Examples: "I need to speak to an agent", "Can I talk to a human?", "This isn't working, get me help"
   
+  4. **turkish_airlines**: User specifically asks about Turkish Airlines flights, bookings, miles, check-ins, or services.
+     Also, if the question is related to a flight then it should be classified as turkish_airlines.
+     Examples: "Check Turkish Airlines flight TK1", "What's my Miles&Smiles balance?", "Turkish Airlines flight status", 
+     "Book Turkish Airlines flight", "THY flight information", "My Turkish Airlines booking", "TK flight details"
+  
   Analyze the user's message carefully and provide:
-  - The appropriate routing category (travel_planner, chitchat, or escalation)
+  - The appropriate routing category (travel_planner, chitchat, escalation, or turkish_airlines)
   - A brief reasoning for your decision
 
 user_prompt: |
@@ -22,4 +27,4 @@ user_prompt: |
   ## User message
   {{ user_message }}
   
-  Classify this into travel_planner, chitchat, or escalation based on the intent.
+  Classify this into travel_planner, chitchat, escalation, or turkish_airlines based on the intent.
