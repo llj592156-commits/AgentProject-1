@@ -16,6 +16,7 @@ dependencies = [
     "python-dateutil>=2.9.0.post0",
     "reflex>=0.8.10",
     "types-pyyaml>=6.0.12.20250516",
+    "langfuse>=2.60.0",
 ]
 
 [build-system]

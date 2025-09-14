@@ -7,9 +7,9 @@ from travel_planner.models.state import TravelPlannerState
 from travel_planner.main import get_compiled_travel_planner_graph
 from langchain_core.runnables import RunnableConfig
 from dotenv import load_dotenv
+from langfuse.langchain import CallbackHandler
 
 load_dotenv()
-
 
 class QA(TypedDict):
     """A question and answer pair."""
@@ -40,6 +40,9 @@ class UIState(rx.State):
     
     # Store interrupted conversations
     _interrupted_conversations: dict[str, dict] = {}
+    
+    # Langgraph Config
+    _langgraph_config: RunnableConfig | None = None
     
     # Class-level storage for TravelPlannerState to avoid MutableProxy wrapping
     # This is stored at class level, not instance level, so Reflex won't wrap it
@@ -73,9 +76,19 @@ class UIState(rx.State):
         if self.current_chat in self._interrupted_conversations:
             return self._interrupted_conversations[self.current_chat]["config"]
         else:
-            # Create new config for new session
-            thread_id = f"{self.current_chat}_{str(uuid.uuid4())[:8]}"
-            return RunnableConfig({"configurable": {"thread_id": thread_id}})
+            if self._langgraph_config is None:
+                # Create Langfuse Handler
+                langfuse_handler = CallbackHandler()
+                # Create new config for new session
+                thread_id = f"{self.current_chat}_{str(uuid.uuid4())[:12]}"
+                self._langgraph_config = RunnableConfig(
+                    {"configurable": {"thread_id": thread_id}},
+                    callbacks=[langfuse_handler],
+                    metadata={
+                        "langfuse_session_id": thread_id
+                    }
+                )
+            return self._langgraph_config
 
     def _is_continuation(self) -> bool:
         """Check if current chat has an interrupted conversation."""
