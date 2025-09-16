@@ -13,7 +13,7 @@ user_prompt: |
   Use the following travel parameters:
   - today : {{ today }}
   - origin: {{ origin }}
-  - destination: {{ destination }}  
+  - destination: {{ destination }}
   - date_from: {{ date_from }}
   - date_to: {{ date_to }}
   - budget: {{ budget }} EUR

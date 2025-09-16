@@ -13,15 +13,8 @@ class OpenAISettings(BaseModel):
     timeout: Optional[int] = Field(default=15, description="Timeout in seconds")
 
 
-class AmadeusSettings(BaseModel):
-    client_id: str
-    client_secret: str
-    base_url: str
-
-
 class AppSettings(BaseModel):
     openai: OpenAISettings
-    amadeus: AmadeusSettings
 
     @classmethod
     def read_from_yaml(cls) -> "AppSettings":
@@ -37,5 +30,4 @@ class AppSettings(BaseModel):
         yaml_path = Path(__file__).parent / "yaml"
         return cls(
             openai=OpenAISettings(**read_yaml(yaml_path / "openai_settings.yaml")),
-            amadeus=AmadeusSettings(**read_yaml(yaml_path / "amadeus_settings.yaml"))
         )

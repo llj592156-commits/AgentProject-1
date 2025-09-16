@@ -81,7 +81,6 @@ class TravelPlannerGraph:
         graph.set_finish_point(self._nf.chitchat_node.node_id)
         graph.set_finish_point(self._nf.escalation_node.node_id)
         graph.set_finish_point(self._nf.turkish_airlines_node.node_id)
-        graph.set_finish_point(self._nf.turkish_airlines_node.node_id)
         
         # Travel planner flow continues as before
         # Add conditional edge based on whether trip params need fixing

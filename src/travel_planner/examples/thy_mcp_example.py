@@ -5,8 +5,8 @@ from langchain_openai import ChatOpenAI
 from dotenv import load_dotenv
 
 load_dotenv()
-NODE22_BIN = "/Users/baturayofluoglu/.nvm/versions/node/v22.19.0/bin"
-MCP_REMOTE = "/Users/baturayofluoglu/.nvm/versions/node/v22.19.0/bin/mcp-remote"
+NODE22_BIN = os.getenv('NODE_BIN_PATH')   
+MCP_REMOTE = os.getenv('MCP_REMOTE_COMMAND')
 
 async def main():
     env = os.environ.copy()

@@ -1,6 +1,5 @@
 
 from datetime import datetime
-from langchain.prompts import ChatPromptTemplate
 
 from travel_planner.models.available_llm_models import LLMs
 from travel_planner.nodes.base_node import BaseNode
