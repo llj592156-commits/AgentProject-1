@@ -1,6 +1,7 @@
 import logging
 import sys
 
+
 def get_logger(level: int = logging.INFO, name: str = "travel_planner") -> logging.Logger:
     """
     Configures and returns a logger with the given name.

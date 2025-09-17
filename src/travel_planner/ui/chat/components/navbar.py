@@ -1,4 +1,5 @@
 import reflex as rx
+
 from travel_planner.ui.chat.ui_state import UIState
 
 
@@ -32,7 +33,7 @@ def sidebar_chat(chat: str) -> rx.Component:
     )
 
 
-def sidebar(trigger) -> rx.Component:
+def sidebar(trigger: rx.Component) -> rx.Component:
     """The sidebar component."""
     return rx.drawer.root(
         rx.drawer.trigger(trigger),
@@ -59,7 +60,7 @@ def sidebar(trigger) -> rx.Component:
     )
 
 
-def modal(trigger) -> rx.Component:
+def modal(trigger: rx.Component) -> rx.Component:
     """A modal to create a new chat."""
     return rx.dialog.root(
         rx.dialog.trigger(trigger),
@@ -86,7 +87,7 @@ def modal(trigger) -> rx.Component:
     )
 
 
-def navbar():
+def navbar() -> rx.Component:
     return rx.hstack(
         rx.badge(
             UIState.current_chat,

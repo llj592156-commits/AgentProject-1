@@ -1,7 +1,7 @@
 import reflex as rx
+from reflex.constants.colors import ColorType
 
 from travel_planner.ui.chat.ui_state import QA, UIState
-from reflex.constants.colors import ColorType
 
 
 def message_content(text: str, color: ColorType) -> rx.Component:
@@ -56,7 +56,7 @@ def chat() -> rx.Component:
         flex="1",
         padding="8px",
     )
-1
+
 
 def action_bar() -> rx.Component:
     """The action bar to send a new message."""

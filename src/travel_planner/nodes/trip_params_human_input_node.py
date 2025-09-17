@@ -1,6 +1,7 @@
 from langchain_core.messages import HumanMessage
-from travel_planner.nodes.base_node import BaseNode
+
 from travel_planner.models.state import TravelPlannerState
+from travel_planner.nodes.base_node import BaseNode
 
 
 class TripParamsHumanInputNode(BaseNode):
@@ -8,7 +9,8 @@ class TripParamsHumanInputNode(BaseNode):
     Human-in-the-loop node that asks the user for missing travel parameters.
     This node will interrupt the execution and wait for human input.
     """
-    def __init__(self):
+
+    def __init__(self) -> None:
         super().__init__()
 
     async def async_run(self, state: TravelPlannerState) -> TravelPlannerState:

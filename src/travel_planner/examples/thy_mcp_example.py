@@ -1,17 +1,20 @@
-import asyncio, os
-from langgraph.prebuilt import create_react_agent
+import asyncio
+import os
+
+from dotenv import load_dotenv
 from langchain_mcp_adapters.client import MultiServerMCPClient
 from langchain_openai import ChatOpenAI
-from dotenv import load_dotenv
+from langgraph.prebuilt import create_react_agent
 
 load_dotenv()
-NODE22_BIN = os.getenv('NODE_BIN_PATH')   
-MCP_REMOTE = os.getenv('MCP_REMOTE_COMMAND')
+NODE22_BIN = os.getenv("NODE_BIN_PATH")
+MCP_REMOTE = os.getenv("MCP_REMOTE_COMMAND")
 
-async def main():
+
+async def main() -> None:
     env = os.environ.copy()
     # Ensure /usr/bin/env node resolves to Node 22
-    env["PATH"] = f"{NODE22_BIN}:{env.get('PATH','')}"
+    env["PATH"] = f"{NODE22_BIN}:{env.get('PATH', '')}"
 
     client = MultiServerMCPClient(
         {
@@ -29,7 +32,10 @@ async def main():
 
     llm = ChatOpenAI(model="gpt-4o-mini")
     agent = create_react_agent(llm, tools)
-    out = await agent.ainvoke({"messages": [{"role":"user","content":"show me the flights for brussels to istanbul"}]})
+    out = await agent.ainvoke(
+        {"messages": [{"role": "user", "content": "show me the flights for brussels to istanbul"}]}
+    )
     print(out["messages"][-1].content)
+
 
 asyncio.run(main())

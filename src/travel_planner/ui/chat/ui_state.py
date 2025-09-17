@@ -1,15 +1,19 @@
 import uuid
-from typing import Any, TypedDict
+from typing import Any, AsyncGenerator, TypedDict
+
 import reflex as rx
+from dotenv import load_dotenv
+from langchain_core.runnables import RunnableConfig
+from langfuse.langchain import CallbackHandler
+from langgraph.graph.state import CompiledStateGraph
+
+from travel_planner.main import get_compiled_travel_planner_graph
 
 # LangGraph travel planner imports
 from travel_planner.models.state import TravelPlannerState
-from travel_planner.main import get_compiled_travel_planner_graph
-from langchain_core.runnables import RunnableConfig
-from dotenv import load_dotenv
-from langfuse.langchain import CallbackHandler
 
 load_dotenv()
+
 
 class QA(TypedDict):
     """A question and answer pair."""
@@ -37,18 +41,18 @@ class UIState(rx.State):
 
     # LangGraph compiled_graph (cached)
     _compiled_graph = None
-    
+
     # Store interrupted conversations
     _interrupted_conversations: dict[str, dict] = {}
-    
+
     # Langgraph Config
     _langgraph_config: RunnableConfig | None = None
-    
+
     # Class-level storage for TravelPlannerState to avoid MutableProxy wrapping
     # This is stored at class level, not instance level, so Reflex won't wrap it
     _chat_states_storage: dict[str, TravelPlannerState] = {}
 
-    def get_travel_planner_compiled_graph(self):
+    def get_travel_planner_compiled_graph(self) -> CompiledStateGraph:
         """Get or create the travel planner compiled_graph using the main module function."""
         if self._compiled_graph is None:
             try:
@@ -63,11 +67,13 @@ class UIState(rx.State):
         # Use class-level storage to avoid MutableProxy wrapping
         if self.current_chat not in UIState._chat_states_storage:
             # Create new state for this chat session
-            UIState._chat_states_storage[self.current_chat] = TravelPlannerState(user_prompt=question)
+            UIState._chat_states_storage[self.current_chat] = TravelPlannerState(
+                user_prompt=question
+            )
         else:
             # Update existing state with new prompt
             UIState._chat_states_storage[self.current_chat].user_prompt = question
-        
+
         # Return the state directly from class storage (no MutableProxy)
         return UIState._chat_states_storage[self.current_chat]
 
@@ -82,11 +88,9 @@ class UIState(rx.State):
                 # Create new config for new session
                 thread_id = f"{self.current_chat}_{str(uuid.uuid4())[:12]}"
                 self._langgraph_config = RunnableConfig(
-                    {"configurable": {"thread_id": thread_id}},
+                    configurable={"thread_id": thread_id},
                     callbacks=[langfuse_handler],
-                    metadata={
-                        "langfuse_session_id": thread_id
-                    }
+                    metadata={"langfuse_session_id": thread_id},
                 )
             return self._langgraph_config
 
@@ -94,21 +98,21 @@ class UIState(rx.State):
         """Check if current chat has an interrupted conversation."""
         return self.current_chat in self._interrupted_conversations
 
-    def _store_interruption(self, config, result):
+    def _store_interruption(self, config: RunnableConfig, result: TravelPlannerState) -> None:
         """Store interrupted conversation state."""
         self._interrupted_conversations[self.current_chat] = {
             "config": config,
             "missing_params": result.missing_trip_params,
-            "partial_result": result
+            "partial_result": result,
         }
 
-    def _clear_interruption(self):
+    def _clear_interruption(self) -> None:
         """Clear interrupted conversation state."""
         if self.current_chat in self._interrupted_conversations:
             del self._interrupted_conversations[self.current_chat]
 
     @rx.event
-    def create_chat(self, form_data: dict[str, Any]):
+    def create_chat(self, form_data: dict[str, Any]) -> None:
         """Create a new chat."""
         # Add the new chat to the list of chats.
         new_chat_name = form_data["new_chat_name"]
@@ -118,7 +122,7 @@ class UIState(rx.State):
         self.is_modal_open = False
 
     @rx.event
-    def set_is_modal_open(self, is_open: bool):
+    def set_is_modal_open(self, is_open: bool) -> None:
         """Set the new chat modal open state.
 
         Args:
@@ -133,23 +137,21 @@ class UIState(rx.State):
         Returns:
             The list of questions and answers.
         """
-        return (
-            self._chats[self.current_chat] if self.current_chat in self._chats else []
-        )
+        return self._chats[self.current_chat] if self.current_chat in self._chats else []
 
     @rx.event
-    def delete_chat(self, chat_name: str):
+    def delete_chat(self, chat_name: str) -> None:
         """Delete the current chat."""
         if chat_name not in self._chats:
             return
         del self._chats[chat_name]
-        
+
         # Clean up associated state
         if chat_name in UIState._chat_states_storage:
             del UIState._chat_states_storage[chat_name]
         if chat_name in self._interrupted_conversations:
             del self._interrupted_conversations[chat_name]
-            
+
         if len(self._chats) == 0:
             self._chats = {
                 "Intros": [],
@@ -158,7 +160,7 @@ class UIState(rx.State):
             self.current_chat = list(self._chats.keys())[0]
 
     @rx.event
-    def set_chat(self, chat_name: str):
+    def set_chat(self, chat_name: str) -> None:
         """Set the name of the current chat.
 
         Args:
@@ -167,7 +169,7 @@ class UIState(rx.State):
         self.current_chat = chat_name
 
     @rx.event
-    def set_new_chat_name(self, new_chat_name: str):
+    def set_new_chat_name(self, new_chat_name: str) -> None:
         """Set the name of the new chat.
 
         Args:
@@ -185,7 +187,7 @@ class UIState(rx.State):
         return list(self._chats.keys())
 
     @rx.event
-    async def process_question(self, form_data: dict[str, Any]):
+    async def process_question(self, form_data: dict[str, Any]) -> AsyncGenerator[None, None]:
         # Get the question from the form
         question = form_data["question"]
 
@@ -198,7 +200,7 @@ class UIState(rx.State):
             yield value
 
     @rx.event
-    async def langgraph_process_question(self, question: str):
+    async def langgraph_process_question(self, question: str) -> AsyncGenerator[None, None]:
         """Process the question using LangGraph travel planner."""
         # Add question to chat
         qa = QA(question=question, answer="")
@@ -230,18 +232,20 @@ class UIState(rx.State):
                 # New conversation or first message with persistent state
                 result = await compiled_graph.ainvoke(config=config, input=travel_state)
                 result = TravelPlannerState(**result)
-            
+
             # Update the stored state with the latest result
             if result:
                 UIState._chat_states_storage[self.current_chat] = result
-            
+
             # Use the response from LangGraph directly
-            response = result.last_ai_message if result and result.last_ai_message else "I'm here to help!"
-            
+            response = (
+                result.last_ai_message if result and result.last_ai_message else "I'm here to help!"
+            )
+
             # Check if interrupted (missing parameters)
             if result and result.missing_trip_params:
                 self._store_interruption(config, result)
-            
+
             self._chats[self.current_chat][-1]["answer"] = response
             yield
 

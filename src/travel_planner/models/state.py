@@ -1,16 +1,20 @@
 from datetime import date
-from typing import Annotated, Optional
+from typing import Annotated
+
+from langgraph.graph.message import BaseMessage, add_messages
 from pydantic import BaseModel, Field
-from langgraph.graph.message import add_messages, BaseMessage
+
 from travel_planner.models.router_models import RoutingDecision
+
 
 class HotelInfo(BaseModel):
     name: str
     address: str
     price_per_nfght: float
     currency: str = "EUR"
-    rating: Optional[float] = None
+    rating: float | None = None
     provider_id: str
+
 
 class HotelAPIParams(BaseModel):
     cityCode: str = Field(..., description="IATA city code (e.g. PAR)")
@@ -22,6 +26,7 @@ class HotelAPIParams(BaseModel):
     priceRange: str = Field(..., description="Format 'min-max', e.g. '0-150'")
     sort: str = "PRICE"
 
+
 class TravelParams(BaseModel):
     origin: str | None = None
     destination: str | None = None
@@ -32,6 +37,7 @@ class TravelParams(BaseModel):
 
 class TravelPlannerState(BaseModel):
     """State object produced by ExtractTripParamsNode."""
+
     user_prompt: str
     messages: Annotated[list[BaseMessage], add_messages] = []
     travel_params: TravelParams | None = None

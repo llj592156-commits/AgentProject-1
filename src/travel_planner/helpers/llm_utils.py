@@ -1,21 +1,23 @@
 from __future__ import annotations
 
-from typing import Type, TypeVar, cast
-from pydantic import BaseModel
-from langchain_openai import ChatOpenAI
+from typing import TypeVar, cast
+
+from langchain_core.messages import AIMessage, BaseMessage
 from langchain_core.prompt_values import PromptValue
-from langchain_core.messages import BaseMessage, AIMessage
+from langchain_openai import ChatOpenAI
+from pydantic import BaseModel
 
 from travel_planner.models.available_llm_models import LLMs
 from travel_planner.settings.settings_handler import OpenAISettings
 
 T = TypeVar("T", bound=BaseModel)
 
+
 async def invoke_llm(
     prompt_value: PromptValue,
     llm: ChatOpenAI,
-    response_model: Type[T] | None = None,
-    messages_history: list[BaseMessage] = []
+    response_model: type[T] | None = None,
+    messages_history: list[BaseMessage] | None = None,
 ) -> T | BaseMessage | AIMessage:
     """
     Uses OpenAI function calling / JSON mode to parse directly into a Pydantic model.
@@ -32,7 +34,8 @@ async def invoke_llm(
     messages = prompt_value.to_messages()
     system_message = messages[0]
     human_message = messages[1]
-    
+    if messages_history is None:
+        messages_history = []
     input_messages: list[BaseMessage] = [system_message, *messages_history, human_message]
     if response_model is not None:
         structured_llm = llm.with_structured_output(response_model)

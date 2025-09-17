@@ -1,9 +1,12 @@
 # returns a Graph object
 from pathlib import Path
-from travel_planner.main import get_compiled_travel_planner_graph
-from langgraph.checkpoint.memory import MemorySaver
+
 from dotenv import load_dotenv
+
+from travel_planner.main import get_compiled_travel_planner_graph
+
 load_dotenv()
+
 
 def draw_graph() -> None:
     # make sure docs/ exists
@@ -12,11 +15,10 @@ def draw_graph() -> None:
 
     # init orchestrator
     compiled_graph = get_compiled_travel_planner_graph()
-    
+
     # ⇩ note the extra `.get_graph()`
-    compiled_graph.get_graph().draw_mermaid_png(
-        output_file_path=docs_path / "langgraph.png"
-    )
+    compiled_graph.get_graph().draw_mermaid_png(output_file_path=docs_path / "langgraph.png")
+
 
 if __name__ == "__main__":
     draw_graph()

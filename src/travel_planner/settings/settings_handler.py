@@ -1,5 +1,4 @@
 from pathlib import Path
-from typing import Optional
 
 from pydantic import BaseModel, Field
 
@@ -10,7 +9,7 @@ class OpenAISettings(BaseModel):
     large_model: str
     mini_model: str
     temperature: float = 0.0
-    timeout: Optional[int] = Field(default=15, description="Timeout in seconds")
+    timeout: int | None = Field(default=15, description="Timeout in seconds")
 
 
 class AppSettings(BaseModel):
