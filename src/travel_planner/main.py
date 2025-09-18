@@ -1,4 +1,6 @@
 from dotenv import load_dotenv
+from langchain_core.runnables import RunnableConfig
+from langfuse.langchain import CallbackHandler
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph.state import CompiledStateGraph
 
@@ -24,3 +26,13 @@ def get_compiled_travel_planner_graph() -> CompiledStateGraph:
         ],
     )
     return compiled_graph
+
+
+def get_config(thread_id: str) -> RunnableConfig:
+    langfuse_handler = CallbackHandler()
+    config = RunnableConfig(
+        configurable={"thread_id": thread_id},
+        callbacks=[langfuse_handler],
+        metadata={"langfuse_session_id": thread_id},
+    )
+    return config
