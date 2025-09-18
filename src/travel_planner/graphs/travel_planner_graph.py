@@ -81,7 +81,7 @@ class TravelPlannerGraph:
         # Add conditional edge from router based on routing decision
         graph.add_conditional_edges(
             self._nf.router_node.node_id,
-            self._route_request,
+            self._decide_next_route,
             {
                 self._nf.extract_trip_params_node.node_id: self._nf.extract_trip_params_node.node_id,
                 self._nf.chitchat_node.node_id: self._nf.chitchat_node.node_id,
@@ -133,7 +133,7 @@ class TravelPlannerGraph:
             return self._nf.fix_trip_params_node.node_id
         return self._nf.llm_trip_planner_node.node_id
 
-    def _route_request(self, state: TravelPlannerState) -> str:
+    def _decide_next_route(self, state: TravelPlannerState) -> str:
         if (
             state.routing_decision is None
             or state.routing_decision.predicted_route == Routes.CHITCHAT
