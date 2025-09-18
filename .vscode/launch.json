@@ -1,3 +1,6 @@
+// Normally this file should not be committed to source control
+// but it is included here for convenience for the VSCode users
+// to quickly get started with debugging the Reflex app and main script.
 {
     "version": "0.2.0",
     "configurations": [
