@@ -4,7 +4,7 @@ from typing import TypeVar, cast
 
 from langchain_core.messages import AIMessage, BaseMessage
 from langchain_core.prompt_values import PromptValue
-from langchain_openai import ChatOpenAI
+from langchain_community.chat_models.tongyi import ChatTongyi
 from pydantic import BaseModel
 
 from travel_planner.models.available_llm_models import LLMs
@@ -15,7 +15,7 @@ T = TypeVar("T", bound=BaseModel)
 
 async def invoke_llm(
     prompt_value: PromptValue,
-    llm: ChatOpenAI,
+    llm: ChatTongyi,
     response_model: type[T] | None = None,
     messages_history: list[BaseMessage] | None = None,
 ) -> T | BaseMessage | AIMessage:
