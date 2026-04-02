@@ -1,3 +1,6 @@
+# AgentProject-1
+The first agent project 
+
 # LangGraph Travel Planner Template
 
 Opinionated, production-minded LangGraph template for building scalable, observable, multi-tool AI agent applications (travel planning example included).
