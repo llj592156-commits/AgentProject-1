@@ -16,8 +16,8 @@ class TravelPlannerGraph:
     def __init__(self, node_factory: NodeFactory):
         # Create a shortcut, normally it's not a good practice but it will be used
         # frequently in this class.
-        self._nf = node_factory
-        self.logger = get_logger()
+        self._nf = node_factory # 节点工厂实例
+        self.logger = get_logger() # 日志记录器
 
     # --------------------------------------------------------------------- #
     # Public helpers

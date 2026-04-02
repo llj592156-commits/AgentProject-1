@@ -1,3 +1,4 @@
+#ok
 from pathlib import Path
 
 from langchain.prompts import (
@@ -27,11 +28,11 @@ def read_yaml_and_parse_chat_prompt(yaml_path: Path) -> ChatPromptTemplate:
 
 
 class PromptTemplates(BaseModel):
-    trip_params_extraction: ChatPromptTemplate
-    fix_trip_params_extraction: ChatPromptTemplate
-    trip_planner: ChatPromptTemplate
-    routing_decision: ChatPromptTemplate
-    chitchat_response: ChatPromptTemplate
+    trip_params_extraction: ChatPromptTemplate  # 旅行参数提取提示模板
+    fix_trip_params_extraction: ChatPromptTemplate  # 修复旅行参数提取提示模板
+    trip_planner: ChatPromptTemplate  # 旅行计划器提示模板
+    routing_decision: ChatPromptTemplate  # 路由决策提示模板
+    chitchat_response: ChatPromptTemplate  # 聊天响应提示模板
 
     @classmethod
     def read_from_yaml(cls) -> "PromptTemplates":

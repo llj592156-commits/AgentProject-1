@@ -15,8 +15,8 @@ from travel_planner.prompts.prompt_handler import PromptTemplates
 class NodeFactory:
     def __init__(self, prompt_templates: PromptTemplates, llm_models: LLMs):
         # Common variables for some nodes
-        self.prompt_templates = prompt_templates
-        self.llm_models = llm_models
+        self.prompt_templates = prompt_templates  # 提示模板实例
+        self.llm_models = llm_models     # LLM模型实例
 
     @cached_property
     def extract_trip_params_node(self) -> ExtractTripParamsNode:
