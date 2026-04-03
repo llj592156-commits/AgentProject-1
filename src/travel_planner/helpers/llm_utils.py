@@ -12,7 +12,7 @@ from travel_planner.settings.settings_handler import OpenAISettings
 
 T = TypeVar("T", bound=BaseModel)
 
-
+#异步调用LLM模型
 async def invoke_llm(
     prompt_value: PromptValue,
     llm: ChatTongyi,
@@ -38,31 +38,31 @@ async def invoke_llm(
         messages_history = []
     input_messages: list[BaseMessage] = [system_message, *messages_history, human_message]
     if response_model is not None:
-        structured_llm = llm.with_structured_output(response_model)
-        result = await structured_llm.ainvoke(input=input_messages)
-        return cast(T, result)
+        structured_llm = llm.with_structured_output(response_model) # 创建一个结构化输出的LLM模型
+        result = await structured_llm.ainvoke(input=input_messages) #异步调用的结构化输出的LLM模型
+        return cast(T, result) #这个cast纯粹是为了开发体验和代码静态检查。
     else:
         result = await llm.ainvoke(input=input_messages)
         return result
 
-
-def _create_models(settings: OpenAISettings, model_name: str) -> ChatOpenAI:
+#创建LLM模型
+def _create_models(settings: OpenAISettings, model_name: str) -> ChatTongyi:
     """
-    Instantiates a ChatOpenAI object using typed OpenAISettings.
+    Instantiates a ChatTongyi object using typed OpenAISettings.
 
     Args:
         settings: OpenAISettings object with model config.
 
     Returns:
-        A configured ChatOpenAI instance.
+        A configured ChatTongyi instance.
     """
-    return ChatOpenAI(
+    return ChatTongyi(
         model=model_name,
         temperature=settings.temperature,
         timeout=settings.timeout,
     )
 
-
+#获取可用的LLM模型
 def get_available_llms(settings: OpenAISettings) -> LLMs:
     return LLMs(
         large_model=_create_models(settings, settings.large_model),

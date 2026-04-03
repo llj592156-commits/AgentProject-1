@@ -1,5 +1,5 @@
+#ok
 from datetime import datetime
-
 from travel_planner.helpers.llm_utils import invoke_llm
 from travel_planner.models.available_llm_models import LLMs
 from travel_planner.models.state import TravelParams, TravelPlannerState
@@ -19,13 +19,15 @@ class ExtractTripParamsNode(BaseNode):
         self.prompt_templates = prompt_templates
         self.llm_models = llm_models
 
+    #异步运行
     async def async_run(self, state: TravelPlannerState) -> TravelPlannerState:  # type: ignore[override]
         # Try to extract travel parameters using OpenAI structured output
         prompt_value = self.prompt_templates.trip_params_extraction.format_prompt(
             user_message=state.user_prompt, today=datetime.today()
-        )
+        ) # 格式化提示模板 ，将用户提示和当前日期格式化为提示模板
 
-        # Extract travel parameters
+
+        # 调用LLM模型提取旅行参数，返回TravelParams对象
         travel_params = await invoke_llm(
             prompt_value=prompt_value,
             response_model=TravelParams,
@@ -33,6 +35,7 @@ class ExtractTripParamsNode(BaseNode):
             messages_history=state.messages,
         )
 
+        # 检查是否成功解析为TravelParams对象
         if not isinstance(travel_params, TravelParams):
             self.logger.error(
                 f"LLM response could not be parsed into TravelParams: {travel_params}"
@@ -40,6 +43,7 @@ class ExtractTripParamsNode(BaseNode):
             raise ValueError("Invalid travel parameters")
 
         # Validate if we have all required information
+        #model_dump()方法将TravelParams对象转换为字典，方便遍历字段值
         missing_fields = []
         for field_name, field_value in travel_params.model_dump().items():
             if field_value is None:
@@ -66,3 +70,5 @@ class ExtractTripParamsNode(BaseNode):
                 travel_params.budget,
             )
         return state
+
+

@@ -12,6 +12,9 @@ from __future__ import annotations
 import asyncio
 import uuid
 
+import sys
+import os
+
 from travel_planner.main import get_compiled_travel_planner_graph, get_config
 from travel_planner.models.state import TravelPlannerState
 

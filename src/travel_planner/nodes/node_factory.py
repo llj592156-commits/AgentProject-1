@@ -19,17 +19,17 @@ class NodeFactory:
         self.llm_models = llm_models     # LLM模型实例
 
     @cached_property
-    def extract_trip_params_node(self) -> ExtractTripParamsNode: # 旅行参数提取节点
+    def extract_trip_params_node(self) -> ExtractTripParamsNode: # 旅行参数提取节点，以及缺失参数处理
         return ExtractTripParamsNode(
             prompt_templates=self.prompt_templates, llm_models=self.llm_models
-        )
+        ) #ok
 
     @cached_property
     def fix_trip_params_node(self) -> FixTripParamsNode: # 修复旅行参数提取节点
-        return FixTripParamsNode(prompt_templates=self.prompt_templates, llm_models=self.llm_models)
+        return FixTripParamsNode(prompt_templates=self.prompt_templates, llm_models=self.llm_models) 
 
     @cached_property
-    def trip_params_human_input_node(self) -> TripParamsHumanInputNode: # 旅行参数人类输入节点
+    def trip_params_human_input_node(self) -> TripParamsHumanInputNode: # 旅行参数人类输入节点 额外消息
         return TripParamsHumanInputNode()
 
     @cached_property

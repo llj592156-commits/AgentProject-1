@@ -1,8 +1,9 @@
+#ok
 import os
 
 from langchain_core.messages import AIMessage
 from langchain_mcp_adapters.client import MultiServerMCPClient
-from langgraph.prebuilt import create_react_agent
+from langchain.agents import create_agent
 
 from travel_planner.models.available_llm_models import LLMs
 from travel_planner.models.state import TravelPlannerState
@@ -60,7 +61,7 @@ class TurkishAirlinesNode(BaseNode):
                 self.logger.info(f"Loaded Turkish Airlines MCP tools: {[t.name for t in tools]}")
 
                 # Create the agent with the large model and MCP tools
-                self.turkish_airlines_agent = create_react_agent(self.llm_models.large_model, tools)
+                self.turkish_airlines_agent = create_agent(self.llm_models.large_model, tools)
                 self.logger.info("Turkish Airlines MCP agent initialized successfully")
 
             except Exception as e:

@@ -7,8 +7,8 @@ from travel_planner.main import get_compiled_travel_planner_graph
 
 load_dotenv()
 
-
-def draw_graph() -> None:
+#绘制旅行规划流图
+def draw_travel_planner_graph() -> None:
     # make sure docs/ exists
     docs_path = Path(__file__).parent.parent / "docs"
     docs_path.mkdir(exist_ok=True)

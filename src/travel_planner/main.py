@@ -1,6 +1,6 @@
 from dotenv import load_dotenv
 from langchain_core.runnables import RunnableConfig
-from langfuse.langchain import CallbackHandler
+# from langfuse.langchain import CallbackHandler
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph.state import CompiledStateGraph
 
@@ -13,26 +13,26 @@ from travel_planner.settings.settings_handler import AppSettings
 
 def get_compiled_travel_planner_graph() -> CompiledStateGraph:
     load_dotenv()
-    prompt_templates = PromptTemplates.read_from_yaml()
-    settings = AppSettings.read_from_yaml()
-    llm_models = get_available_llms(settings=settings.openai)
-    node_factory = NodeFactory(prompt_templates=prompt_templates, llm_models=llm_models)
-    graph = TravelPlannerGraph(node_factory=node_factory)
-    built_graph = graph.build_graph()
+    prompt_templates = PromptTemplates.read_from_yaml() #读取全部提示词
+    settings = AppSettings.read_from_yaml() #读取大模型全部设置
+    llm_models = get_available_llms(settings=settings.openai) #获取可用的LLM模型
+    node_factory = NodeFactory(prompt_templates=prompt_templates, llm_models=llm_models) #创建节点工厂
+    graph = TravelPlannerGraph(node_factory=node_factory) #创建结点流程图类
+    built_graph = graph.build_graph() #构建图
     compiled_graph = built_graph.compile(
         checkpointer=MemorySaver(),
         interrupt_before=[
             node_factory.trip_params_human_input_node.node_id  # Human in the loop
         ],
-    )
+    ) #编译图
     return compiled_graph
 
-
+#获取可运行配置
 def get_config(thread_id: str) -> RunnableConfig:
-    langfuse_handler = CallbackHandler()
+    # langfuse_handler = CallbackHandler()
     config = RunnableConfig(
         configurable={"thread_id": thread_id},
-        callbacks=[langfuse_handler],
+        # callbacks=[langfuse_handler],
         metadata={"langfuse_session_id": thread_id},
     )
     return config
