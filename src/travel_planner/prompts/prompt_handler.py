@@ -1,7 +1,7 @@
 #ok
 from pathlib import Path
 
-from langchain.prompts import (
+from langchain_core.prompts import (
     ChatPromptTemplate,
     HumanMessagePromptTemplate,
     SystemMessagePromptTemplate,
