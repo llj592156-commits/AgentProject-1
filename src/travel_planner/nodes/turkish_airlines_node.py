@@ -1,5 +1,6 @@
 #ok
 import os
+import sys
 
 from langchain_core.messages import AIMessage
 from langchain_mcp_adapters.client import MultiServerMCPClient
@@ -25,13 +26,16 @@ class TurkishAirlinesNode(BaseNode):
         self.turkish_airlines_agent = None
 
         # MCP configuration from environment variables
-        self.node_bin_path = os.getenv("NODE_BIN_PATH", "/usr/local/bin")
+        self.node_bin_path = os.getenv("NODE_BIN_PATH", "")
         self.mcp_remote_command = os.getenv("MCP_REMOTE_COMMAND", "mcp-remote")
+        self.use_mock_thy = os.getenv("USE_MOCK_THY", "false").lower() == "true"
+        self.mock_thy_path = os.getenv("MOCK_THY_PATH", "d:/AgentProject/Project-1/langgraph-template-travel-planner/mock_thy_server.py") #运行脚本位置
 
         # Log the configuration for debugging
         self.logger.info(
             f"Turkish Airlines MCP Config - Node path: "
-            f"{self.node_bin_path}, MCP command: {self.mcp_remote_command}"
+            f"{self.node_bin_path}, MCP command: {self.mcp_remote_command}, "
+            f"Use Mock: {self.use_mock_thy}"
         )
 
     async def _initialize_mcp_client(self) -> None:
@@ -39,23 +43,39 @@ class TurkishAirlinesNode(BaseNode):
         if self.mcp_client is None:
             try:
                 env = os.environ.copy()
-                # Ensure Node.js is available in PATH
-                env["PATH"] = f"{self.node_bin_path}:{env.get('PATH', '')}"
+                # Ensure Node.js is available in PATH (using OS-specific separator)
+                if self.node_bin_path:
+                    env["PATH"] = f"{self.node_bin_path}{os.pathsep}{env.get('PATH', '')}"
 
-                self.mcp_client = MultiServerMCPClient(
-                    {
-                        "turkish_airlines": {
-                            "transport": "stdio",
-                            "command": self.mcp_remote_command,
-                            "args": [
-                                "https://mcp.turkishtechlab.com/sse",
-                                "--auth-timeout",
-                                "120",
-                            ],
-                            "env": env,
+                if self.use_mock_thy:
+                    # Use local mock server
+
+                    self.mcp_client = MultiServerMCPClient(
+                        {
+                            "turkish_airlines": {
+                                "transport": "stdio",
+                                "command": sys.executable, # 使用当前正在运行的 python 解释器
+                                "args": [self.mock_thy_path],
+                                "env": env,
+                            }
                         }
-                    }
-                )
+                    )
+                else:
+                    # Use remote server via mcp-remote
+                    self.mcp_client = MultiServerMCPClient(
+                        {
+                            "turkish_airlines": {
+                                "transport": "stdio",
+                                "command": self.mcp_remote_command,
+                                "args": [
+                                    "https://mcp.turkishtechlab.com/sse",
+                                    "--auth-timeout",
+                                    "120",
+                                ],
+                                "env": env,
+                            }
+                        }
+                    )
 
                 tools = await self.mcp_client.get_tools()  # type: ignore
                 self.logger.info(f"Loaded Turkish Airlines MCP tools: {[t.name for t in tools]}")

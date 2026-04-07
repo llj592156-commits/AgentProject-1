@@ -1,3 +1,4 @@
+#ok
 """Turkish Airlines (THY) multi-step example.
 
 Demonstrates routing to the TurkishAirlinesNode. Requires MCP credentials
@@ -32,11 +33,15 @@ async def run() -> None:
     result = await graph.ainvoke(input=state.model_dump(), config=config)
     print("THY first response:", result.get("last_ai_message"))
 
-    # Follow-up (should remain in airline context, leveraging history)
-    state.user_prompt = "Can you also check business class availability?"
+    state.user_prompt = "December 15th."
     result2 = await graph.ainvoke(input=state.model_dump(), config=config)
     print("THY follow-up response:", result2.get("last_ai_message"))
 
+    # Follow-up (should remain in airline context, leveraging history)
+    state.user_prompt = "Can you also check business class availability?"
+    result3 = await graph.ainvoke(input=state.model_dump(), config=config)
+    print("THY follow-up response:", result3.get("last_ai_message"))
 
+    
 if __name__ == "__main__":
     asyncio.run(run())
