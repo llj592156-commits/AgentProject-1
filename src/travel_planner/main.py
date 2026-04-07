@@ -2,7 +2,10 @@
 from dotenv import load_dotenv
 from langchain_core.runnables import RunnableConfig
 # from langfuse.langchain import CallbackHandler
-from langgraph.checkpoint.memory import MemorySaver
+
+from contextlib import AsyncExitStack
+
+from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 from langgraph.graph.state import CompiledStateGraph
 
 from travel_planner.graphs.travel_planner_graph import TravelPlannerGraph
@@ -11,8 +14,11 @@ from travel_planner.nodes.node_factory import NodeFactory
 from travel_planner.prompts.prompt_handler import PromptTemplates
 from travel_planner.settings.settings_handler import AppSettings
 
+_stack = AsyncExitStack()
+_checkpointer = None
 
-def get_compiled_travel_planner_graph() -> CompiledStateGraph:
+async def get_compiled_travel_planner_graph() -> CompiledStateGraph:
+    global _checkpointer
     load_dotenv()
     prompt_templates = PromptTemplates.read_from_yaml() #读取全部提示词
     settings = AppSettings.read_from_yaml() #读取大模型全部设置
@@ -20,8 +26,15 @@ def get_compiled_travel_planner_graph() -> CompiledStateGraph:
     node_factory = NodeFactory(prompt_templates=prompt_templates, llm_models=llm_models) #创建节点工厂
     graph = TravelPlannerGraph(node_factory=node_factory) #创建结点流程图类
     built_graph = graph.build_graph() #构建图
+    
+    if _checkpointer is None:
+        # 使用持久化的 SQLite 存储，并通过全局栈保持连接开启
+        _checkpointer = await _stack.enter_async_context(
+            AsyncSqliteSaver.from_conn_string("checkpoints202604071333.sqlite")
+        )
+    
     compiled_graph = built_graph.compile(
-        checkpointer=MemorySaver(),
+        checkpointer=_checkpointer,
         interrupt_before=[
             node_factory.trip_params_human_input_node.node_id  # Human in the loop
         ],

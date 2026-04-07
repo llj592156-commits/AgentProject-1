@@ -26,7 +26,7 @@ from travel_planner.models.state import TravelPlannerState
 
 
 async def run() -> None:
-    graph = get_compiled_travel_planner_graph()
+    graph = await get_compiled_travel_planner_graph()
 
     thread_id = f"travel_planner_human_loop_{str(uuid.uuid4())[:12]}"
     config = get_config(thread_id=thread_id)
