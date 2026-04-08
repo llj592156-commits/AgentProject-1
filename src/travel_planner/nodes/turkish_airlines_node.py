@@ -1,124 +1,80 @@
 #ok
-import os
-import sys
-
 from langchain_core.messages import AIMessage
-from langchain_mcp_adapters.client import MultiServerMCPClient
 from langchain.agents import create_agent
 
 from travel_planner.models.available_llm_models import LLMs
 from travel_planner.models.state import TravelPlannerState
 from travel_planner.nodes.base_node import BaseNode
 from travel_planner.prompts.prompt_handler import PromptTemplates
+from travel_planner.tools.mcp_client import MCPClientPool, TurkishAirlinesMCPConfig
 
 
 class TurkishAirlinesNode(BaseNode):
     """
     Node that handles Turkish Airlines specific queries and integrates with
     Turkish Airlines MCP server for flight information, bookings, and services.
+
+    Uses the tool layer's MCPClientPool for connection management.
     """
 
-    def __init__(self, prompt_templates: PromptTemplates, llm_models: LLMs):
+    def __init__(
+        self,
+        prompt_templates: PromptTemplates,
+        llm_models: LLMs,
+        mcp_pool: MCPClientPool | None = None,
+    ):
         super().__init__()
         self.prompt_templates = prompt_templates
         self.llm_models = llm_models
-        self.mcp_client = None
-        self.turkish_airlines_agent = None
 
-        # MCP configuration from environment variables
-        self.node_bin_path = os.getenv("NODE_BIN_PATH", "")
-        self.mcp_remote_command = os.getenv("MCP_REMOTE_COMMAND", "mcp-remote")
-        self.use_mock_thy = os.getenv("USE_MOCK_THY", "false").lower() == "true"
-        self.mock_thy_path = os.getenv("MOCK_THY_PATH", "d:/AgentProject/Project-1/langgraph-template-travel-planner/mock_thy_server.py") #运行脚本位置
+        # Use injected MCP pool or create one from environment
+        self._mcp_pool = mcp_pool or MCPClientPool()
+        self._mcp_config = TurkishAirlinesMCPConfig.from_env()
+        self._turkish_airlines_agent = None
 
-        # Log the configuration for debugging
+        # Register the Turkish Airlines connection
+        self._mcp_pool.register_connection(self._mcp_config.to_mcp_connection())
+
         self.logger.info(
-            f"Turkish Airlines MCP Config - Node path: "
-            f"{self.node_bin_path}, MCP command: {self.mcp_remote_command}, "
-            f"Use Mock: {self.use_mock_thy}"
+            f"TurkishAirlinesNode initialized - "
+            f"Use Mock: {self._mcp_config.use_mock}"
         )
 
-    async def _initialize_mcp_client(self) -> None:
-        """Initialize the MCP client and Turkish Airlines agent if not already done."""
-        if self.mcp_client is None:
+    async def _ensure_agent_initialized(self) -> None:
+        """Initialize the Turkish Airlines agent if not already done."""
+        if self._turkish_airlines_agent is None:
             try:
-                env = os.environ.copy()
-                # Ensure Node.js is available in PATH (using OS-specific separator)
-                if self.node_bin_path:
-                    env["PATH"] = f"{self.node_bin_path}{os.pathsep}{env.get('PATH', '')}"
-
-                if self.use_mock_thy:
-                    # Use local mock server
-
-                    self.mcp_client = MultiServerMCPClient(
-                        {
-                            "turkish_airlines": {
-                                "transport": "stdio",
-                                "command": sys.executable, # 使用当前正在运行的 python 解释器
-                                "args": [self.mock_thy_path],
-                                "env": env,
-                            }
-                        }
-                    )
-                else:
-                    # Use remote server via mcp-remote
-                    self.mcp_client = MultiServerMCPClient(
-                        {
-                            "turkish_airlines": {
-                                "transport": "stdio",
-                                "command": self.mcp_remote_command,
-                                "args": [
-                                    "https://mcp.turkishtechlab.com/sse",
-                                    "--auth-timeout",
-                                    "120",
-                                ],
-                                "env": env,
-                            }
-                        }
-                    )
-
-                tools = await self.mcp_client.get_tools()  # type: ignore
-                self.logger.info(f"Loaded Turkish Airlines MCP tools: {[t.name for t in tools]}")
-
-                # Create the agent with the large model and MCP tools
-                self.turkish_airlines_agent = create_agent(self.llm_models.large_model, tools)
+                tools = await self._mcp_pool.get_tools()
+                self._turkish_airlines_agent = create_agent(
+                    self.llm_models.large_model, tools
+                )
                 self.logger.info("Turkish Airlines MCP agent initialized successfully")
-
             except Exception as e:
-                self.logger.error(f"Failed to initialize Turkish Airlines MCP client: {e}")
+                self.logger.error(f"Failed to initialize Turkish Airlines MCP agent: {e}")
                 raise
 
     async def async_run(self, state: TravelPlannerState) -> TravelPlannerState:  # type: ignore[override]
         try:
-            # Initialize MCP client and agent if not already done
-            await self._initialize_mcp_client()
+            await self._ensure_agent_initialized()
 
-            if self.turkish_airlines_agent is None:
+            if self._turkish_airlines_agent is None:
                 raise ValueError("Turkish Airlines MCP agent is not initialized")
 
-            # Invoke the Turkish Airlines agent with the user's query
             self.logger.info(
                 f"{self.node_id} | Processing Turkish Airlines query: {state.user_prompt}"
             )
 
-            agent_response = await self.turkish_airlines_agent.ainvoke({"messages": state.messages})
+            agent_response = await self._turkish_airlines_agent.ainvoke(
+                {"messages": state.messages}
+            )
 
-            # Extract the response content
-            if (
-                agent_response
-                and "messages" in agent_response
-                and len(agent_response["messages"]) > 0
-            ):
+            if agent_response and "messages" in agent_response and len(agent_response["messages"]) > 0:
                 ai_message = agent_response["messages"][-1]
-
-                # Store the Turkish Airlines response in state
                 state.last_ai_message = str(ai_message.content)
                 state.messages.append(ai_message)
-
                 self.logger.info(f"{self.node_id} | Successfully processed Turkish Airlines query")
             else:
                 self.logger.error("Empty or invalid response from Turkish Airlines agent")
-                # Fallback response
                 fallback_message = (
                     "I'm sorry, I couldn't process your Turkish Airlines request at the moment. "
                     "Please try again later."
@@ -128,8 +84,7 @@ class TurkishAirlinesNode(BaseNode):
                 state.messages.append(ai_message)
 
         except Exception as e:
-            self.logger.error(f"Error in Turkish Airlines node: {e}")
-            # Fallback response for errors
+            self.logger.error(f"Error in TurkishAirlinesNode: {e}")
             error_message = (
                 "I encountered an issue while processing your Turkish Airlines request. "
                 "Please try again or contact support if the problem persists."
