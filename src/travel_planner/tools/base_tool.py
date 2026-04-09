@@ -1,19 +1,19 @@
 """Base class for all tools in the tool layer."""
-
+#ok
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Any, Optional
 import time
 
 
-@dataclass
+@dataclass #样板模板 有了过后会自动生成构造函数等
 class ToolResult:
     """Standardized result from tool execution."""
 
     success: bool
     data: Any | None = None
     error: str | None = None
-    metadata: dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)  #default_factory 每次创建一个实例都调用dict创建一个新的dict
 
     @classmethod
     def ok(cls, data: Any, **metadata) -> "ToolResult":
@@ -26,7 +26,7 @@ class ToolResult:
         return cls(success=False, error=error, metadata=metadata)
 
 
-@dataclass
+@dataclass #工具的一些配置参数
 class ToolConfig:
     """Configuration for tool execution."""
 
@@ -99,14 +99,14 @@ class BaseTool(ABC):
             attempts=self.config.max_retries,
         )
 
-    def _build_cache_key(self, **kwargs) -> str:
+    def _build_cache_key(self, **kwargs) -> str: #根据参数生成缓存键 返回："weather_tool:city=Paris:date=2026-04-09"
         """Build a cache key from input arguments."""
         parts = [self.name]
         for k, v in sorted(kwargs.items()):
             parts.append(f"{k}={v}")
         return ":".join(parts)
 
-    def _get_from_cache(self, cache_key: str) -> ToolResult | None:
+    def _get_from_cache(self, cache_key: str) -> ToolResult | None: #"weather_tool:city=Paris": (1744195200.0, ToolResult(...)
         """Get cached result if still valid."""
         if cache_key in self._cache:
             timestamp, result = self._cache[cache_key]
@@ -115,7 +115,7 @@ class BaseTool(ABC):
             del self._cache[cache_key]
         return None
 
-    def _save_to_cache(self, cache_key: str, result: ToolResult) -> None:
+    def _save_to_cache(self, cache_key: str, result: ToolResult) -> None: #"weather_tool:city=Paris": (1744195200.0, ToolResult(...)
         """Save result to cache."""
         self._cache[cache_key] = (time.time(), result)
 

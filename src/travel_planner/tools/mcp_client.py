@@ -1,5 +1,5 @@
 """MCP Client Pool - Manages connections to multiple MCP servers."""
-
+#ok
 import os
 import sys
 from dataclasses import dataclass, field
@@ -42,7 +42,7 @@ class MCPConnection:
 
         return config
 
-
+#管理多个MCP服务器连接  
 class MCPClientPool:
     """Pool of MCP connections with lazy initialization.
 
@@ -53,7 +53,7 @@ class MCPClientPool:
     """
 
     def __init__(self, config: ToolConfig | None = None):
-        self._connections: dict[str, MCPConnection] = {}
+        self._connections: dict[str, MCPConnection] = {} #连接的mcp服务器
         self._client: MultiServerMCPClient | None = None
         self._logger = get_logger()
         self._tools: list[BaseTool] | None = None
@@ -71,6 +71,7 @@ class MCPClientPool:
             self._client = None
             self._tools = None
 
+    #获取工具
     async def get_tools(self) -> list[BaseTool]:
         """Get all tools from registered MCP servers.
 
@@ -95,11 +96,26 @@ class MCPClientPool:
 
     async def _create_client(self) -> MultiServerMCPClient:
         """Create and configure the MCP client."""
+        """"
+        生成的配置示例：
+        {
+            "turkish_airlines": {
+                "transport": "sse",
+                "url": "https://mcp.turkishtechlab.com/sse"
+            },
+            "hotel_booking": {
+                "transport": "stdio",
+                "command": "python",
+                "args": ["hotel_server.py"]
+            }
+        }
+        """
         client_config = {
             name: conn.to_dict() for name, conn in self._connections.items()
         }
         return MultiServerMCPClient(client_config)
 
+    # 作用：从环境变量自动创建连接池
     @classmethod
     def from_env(cls, prefix: str = "") -> "MCPClientPool":
         """Create pool from environment variables.
