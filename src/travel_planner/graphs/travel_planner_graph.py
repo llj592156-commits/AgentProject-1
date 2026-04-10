@@ -3,7 +3,6 @@ from __future__ import annotations # 启用类型提示
 from langgraph.graph import StateGraph
 
 from travel_planner.helpers.logs import get_logger
-from travel_planner.models.router_models import Routes
 from travel_planner.models.state import TravelPlannerState
 from travel_planner.nodes.node_factory import NodeFactory
 
@@ -11,6 +10,10 @@ from travel_planner.nodes.node_factory import NodeFactory
 class TravelPlannerGraph:
     """
     Builds and compiles the LangGraph pipeline for the Gen-AI travel planner.
+
+    Integration with Orchestration Layer:
+    - Uses RoutingStrategyRegistry for routing decisions
+    - Supports skill-based execution through nodes
     """
 
     def __init__(self, node_factory: NodeFactory):
@@ -64,7 +67,7 @@ class TravelPlannerGraph:
             self._nf.trip_params_human_input_node.async_run,
         )
 
-        # LLM Trip Planner Node
+        # LLM Trip Planner Node (uses SkillOrchestrator)
         graph.add_node(
             self._nf.llm_trip_planner_node.node_id, self._nf.llm_trip_planner_node.async_run
         )
@@ -74,52 +77,54 @@ class TravelPlannerGraph:
     def _connect_edges(self, graph: StateGraph) -> StateGraph:
         """
         Wire the ordered execution flow with human-in-the-loop capability.
+
+        Uses RoutingStrategyRegistry for dynamic routing decisions.
         """
         # Set router as entry point
         graph.set_entry_point(self._nf.router_node.node_id)
 
-        # Add conditional edge from router based on routing decision
+        # Add conditional edges from router based on routing decision
+        # The actual routing logic is in _decide_next_route which uses RoutingStrategyRegistry
         graph.add_conditional_edges(
             self._nf.router_node.node_id,
             self._decide_next_route,
             {
-                self._nf.extract_trip_params_node.node_id: self._nf.extract_trip_params_node.node_id, #收集行程参数节点
-                self._nf.chitchat_node.node_id: self._nf.chitchat_node.node_id, #闲聊流节点
-                self._nf.escalation_node.node_id: self._nf.escalation_node.node_id, #升级流节点
-                self._nf.turkish_airlines_node.node_id: self._nf.turkish_airlines_node.node_id, #土耳其航空公司流节点
+                self._nf.extract_trip_params_node.node_id: self._nf.extract_trip_params_node.node_id,
+                self._nf.chitchat_node.node_id: self._nf.chitchat_node.node_id,
+                self._nf.escalation_node.node_id: self._nf.escalation_node.node_id,
+                self._nf.turkish_airlines_node.node_id: self._nf.turkish_airlines_node.node_id,
             },
         )
 
         # Chitchat, escalation, and Turkish Airlines nodes are end points
-        graph.set_finish_point(self._nf.chitchat_node.node_id) #闲聊流结束点
-        graph.set_finish_point(self._nf.escalation_node.node_id) #升级流结束点
-        graph.set_finish_point(self._nf.turkish_airlines_node.node_id) #土耳其航空公司流结束点
+        graph.set_finish_point(self._nf.chitchat_node.node_id)
+        graph.set_finish_point(self._nf.escalation_node.node_id)
+        graph.set_finish_point(self._nf.turkish_airlines_node.node_id)
 
-        # Travel planner flow continues as before
+        # Travel planner flow continues
         # Add conditional edge based on whether trip params need fixing
         graph.add_conditional_edges(
-            self._nf.extract_trip_params_node.node_id, #收集行程参数节点
-            self._should_fix_trip_params, #判断是否需要修复行程参数
+            self._nf.extract_trip_params_node.node_id,
+            self._should_fix_trip_params,
             {
-                self._nf.fix_trip_params_node.node_id: self._nf.fix_trip_params_node.node_id, #修复行程参数节点
-                self._nf.llm_trip_planner_node.node_id: self._nf.llm_trip_planner_node.node_id, #旅行规划流节点
+                self._nf.fix_trip_params_node.node_id: self._nf.fix_trip_params_node.node_id,
+                self._nf.llm_trip_planner_node.node_id: self._nf.llm_trip_planner_node.node_id,
             },
         )
 
         # After fix attempt, go to human input for missing information
         graph.add_edge(
-            self._nf.fix_trip_params_node.node_id, self._nf.trip_params_human_input_node.node_id #修复行程参数节点到行程参数人机交互节点的边
+            self._nf.fix_trip_params_node.node_id, self._nf.trip_params_human_input_node.node_id
         )
 
         # After human input, go back to collect params to re-process with new info
         graph.add_edge(
-            self._nf.trip_params_human_input_node.node_id, self._nf.extract_trip_params_node.node_id #行程参数人机交互节点到收集行程参数节点的边
+            self._nf.trip_params_human_input_node.node_id, self._nf.extract_trip_params_node.node_id
         )
 
-        graph.set_finish_point(self._nf.llm_trip_planner_node.node_id) #旅行规划流节点结束点
+        graph.set_finish_point(self._nf.llm_trip_planner_node.node_id)
         return graph
 
-    #判断是否需要修复行程参数
     def _should_fix_trip_params(self, state: TravelPlannerState) -> str:
         """
         Decision function to determine if trip parameters need fixing.
@@ -131,25 +136,34 @@ class TravelPlannerGraph:
             "fix_params" if there are missing trip parameters, "continue" otherwise
         """
         if state.missing_trip_params and len(state.missing_trip_params) > 0:
-            return self._nf.fix_trip_params_node.node_id #修复行程参数节点
-        return self._nf.llm_trip_planner_node.node_id #旅行规划流节点
+            return self._nf.fix_trip_params_node.node_id
+        return self._nf.llm_trip_planner_node.node_id
 
-    #决定如何路由下一个结点
     def _decide_next_route(self, state: TravelPlannerState) -> str:
+        """
+        Decide the next node using RoutingStrategyRegistry.
+
+        This method uses the registered routing strategies to determine
+        the next node dynamically, instead of hard-coded if-else logic.
+        """
+        # Use routing strategy registry if available
+        if self._nf._routing_registry:
+            next_node = self._nf._routing_registry.execute(state)
+            self.logger.info(f"Routing strategy selected: {next_node}")
+            return next_node
+
+        # Fallback to default logic if no routing registry
+        self.logger.warning("No routing registry available, using default routing")
         if (
             state.routing_decision is None
-            or state.routing_decision.predicted_route == Routes.CHITCHAT
+            or state.routing_decision.predicted_route.value == "chitchat"
         ):
-            # Default to chitchat if no routing decision available
             return self._nf.chitchat_node.node_id
-        elif state.routing_decision.predicted_route == Routes.ESCALATION:
+        elif state.routing_decision.predicted_route.value == "escalation":
             return self._nf.escalation_node.node_id
-        elif state.routing_decision.predicted_route == Routes.TRAVEL_PLANNER:
+        elif state.routing_decision.predicted_route.value == "travel_planner":
             return self._nf.extract_trip_params_node.node_id
-        elif state.routing_decision.predicted_route == Routes.TURKISH_AIRLINES:
+        elif state.routing_decision.predicted_route.value == "turkish_airlines":
             return self._nf.turkish_airlines_node.node_id
         else:
-            self.logger.error(
-                f"Unknown routing decision: {state.routing_decision.predicted_route}Escalating"
-            )
             return self._nf.escalation_node.node_id

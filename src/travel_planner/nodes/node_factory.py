@@ -11,6 +11,8 @@ from travel_planner.nodes.trip_params_human_input_node import TripParamsHumanInp
 from travel_planner.nodes.turkish_airlines_node import TurkishAirlinesNode
 from travel_planner.prompts.prompt_handler import PromptTemplates
 from travel_planner.tools.mcp_client import MCPClientPool
+from travel_planner.orchestration.strategy import RoutingStrategyRegistry
+from travel_planner.orchestration.orchestrator import SkillOrchestrator
 
 
 class NodeFactory:
@@ -19,6 +21,10 @@ class NodeFactory:
     Tool Layer Integration:
     - Manages shared MCPClientPool across nodes
     - Supports dependency injection for testability
+
+    Orchestration Layer Integration:
+    - Injects RoutingStrategyRegistry for routing decisions
+    - Injects SkillOrchestrator for skill execution
     """
 
     def __init__(
@@ -26,11 +32,15 @@ class NodeFactory:
         prompt_templates: PromptTemplates,
         llm_models: LLMs,
         mcp_pool: MCPClientPool | None = None,
+        routing_registry: RoutingStrategyRegistry | None = None,
+        skill_orchestrator: SkillOrchestrator | None = None,
     ):
         # Common variables for some nodes
         self.prompt_templates = prompt_templates  # 提示模板实例
         self.llm_models = llm_models     # LLM 模型实例
         self._mcp_pool = mcp_pool  # Shared MCP connection pool
+        self._routing_registry = routing_registry  # Routing strategy registry
+        self._skill_orchestrator = skill_orchestrator  # Skill orchestrator
 
     @cached_property
     def extract_trip_params_node(self) -> ExtractTripParamsNode:
@@ -55,7 +65,9 @@ class NodeFactory:
     def router_node(self) -> RouterNode:
         """路由节点"""
         return RouterNode(
-            prompt_templates=self.prompt_templates, llm_models=self.llm_models
+            prompt_templates=self.prompt_templates,
+            llm_models=self.llm_models,
+            routing_registry=self._routing_registry,
         )
 
     @cached_property
@@ -83,5 +95,7 @@ class NodeFactory:
     def llm_trip_planner_node(self) -> LLMTripPlannerNode:
         """LLM 旅行计划节点"""
         return LLMTripPlannerNode(
-            prompt_templates=self.prompt_templates, llm_models=self.llm_models
+            prompt_templates=self.prompt_templates,
+            llm_models=self.llm_models,
+            skill_orchestrator=self._skill_orchestrator,
         )
