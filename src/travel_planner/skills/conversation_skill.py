@@ -27,6 +27,7 @@ class ConversationSkill(BaseSkill):
         user_message = context.state.user_prompt.lower()
 
         # Check for escalation keywords
+        # 有这些关键词就是升级
         escalation_keywords = ["agent", "human", "support", "help", "complaint", "manager"]
         if any(keyword in user_message for keyword in escalation_keywords):
             self._log_execution("escalation", "User requested human assistance")

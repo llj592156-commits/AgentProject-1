@@ -29,6 +29,7 @@ class BookingSkill(BaseSkill):
 
         # TODO: Implement booking logic
         # This would integrate with actual booking APIs
+        # 这里需要接入真实api 先用模拟的方式替代
 
         self._log_execution("complete", "Booking process completed")
 

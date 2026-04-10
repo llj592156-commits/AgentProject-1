@@ -32,6 +32,7 @@ class RoutingStrategy(ABC):
 
 class IntentBasedRoutingStrategy(RoutingStrategy):
     """Route based on detected user intent."""
+    #根据 LLM 识别的用户意图 路由
 
     def __init__(self, intent_map: dict[str, str]):
         """
@@ -59,6 +60,7 @@ class IntentBasedRoutingStrategy(RoutingStrategy):
 
 
 class KeywordBasedRoutingStrategy(RoutingStrategy):
+    #根据用户消息中的关键词路由（不需要 LLM）
     """Route based on keywords in user message."""
 
     def __init__(
@@ -98,6 +100,7 @@ class KeywordBasedRoutingStrategy(RoutingStrategy):
 
 
 class PriorityRoutingStrategy(RoutingStrategy):
+    #根据优先级规则路由（适合 VIP、紧急请求等）
     """Route based on priority rules.
 
     Useful for VIP users, urgent requests, etc.
@@ -140,6 +143,7 @@ class PriorityRoutingStrategy(RoutingStrategy):
 
 
 class RoutingStrategyRegistry:
+    #注册和执行多个策略（按优先级）
     """Registry and executor for routing strategies."""
 
     def __init__(self):

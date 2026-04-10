@@ -45,7 +45,7 @@ class PlanningSkill(BaseSkill):
             )
 
         # Get API gateway if available
-        api_gateway: APIGateway | None = context.get_tool("api_gateway")
+        api_gateway: APIGateway | None = context.get_tool("api_gateway") #从技能状态类获取工具
 
         # Try to gather real data if APIs are available
         flight_data = None

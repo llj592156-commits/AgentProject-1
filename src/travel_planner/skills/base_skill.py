@@ -11,7 +11,7 @@ from travel_planner.helpers.logs import get_logger
 
 
 @dataclass
-class SkillResult:
+class SkillResult: #技能执行结果类
     """Result from skill execution."""
 
     success: bool
@@ -34,7 +34,7 @@ class SkillResult:
 
 
 @dataclass
-class SkillContext:
+class SkillContext: #技能执行状态类
     """Context passed to skills during execution.
 
     Provides access to:
@@ -43,7 +43,7 @@ class SkillContext:
     - Shared resources
     """
 
-    state: TravelPlannerState
+    state: TravelPlannerState 
     tools: dict[str, Any] = field(default_factory=dict)
 
     def get_tool(self, name: str) -> Any | None:
@@ -98,5 +98,5 @@ class BaseSkill(ABC):
         self, phase: str, message: str, level: str = "info"
     ) -> None:
         """Log skill execution phases."""
-        log_method = getattr(self._logger, level, self._logger.info)
-        log_method(f"[{self.name}] {phase}: {message}")
+        log_method = getattr(self._logger, level, self._logger.info) #获取logger实例的方法，如果不存在则使用info方法
+        log_method(f"[{self.name}] {phase}: {message}") #打印这些信息

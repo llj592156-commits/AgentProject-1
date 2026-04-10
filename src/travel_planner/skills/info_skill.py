@@ -7,6 +7,7 @@ Provides:
 - Travel advisories
 - Local information
 """
+#ok 用来获取天气
 
 from travel_planner.skills.base_skill import BaseSkill, SkillContext, SkillResult
 from travel_planner.tools.api_gateway import APIGateway
