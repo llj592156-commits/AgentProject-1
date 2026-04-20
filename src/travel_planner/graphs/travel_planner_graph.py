@@ -141,29 +141,20 @@ class TravelPlannerGraph:
 
     def _decide_next_route(self, state: TravelPlannerState) -> str:
         """
-        Decide the next node using RoutingStrategyRegistry.
-
-        This method uses the registered routing strategies to determine
-        the next node dynamically, instead of hard-coded if-else logic.
+        Decide the next node using routing decision from RouterNode.
         """
-        # Use routing strategy registry if available
-        if self._nf._routing_registry:
-            next_node = self._nf._routing_registry.execute(state)
-            self.logger.info(f"Routing strategy selected: {next_node}")
-            return next_node
-
-        # Fallback to default logic if no routing registry
-        self.logger.warning("No routing registry available, using default routing")
-        if (
-            state.routing_decision is None
-            or state.routing_decision.predicted_route.value == "chitchat"
-        ):
+        if state.routing_decision is None:
             return self._nf.chitchat_node.node_id
-        elif state.routing_decision.predicted_route.value == "escalation":
-            return self._nf.escalation_node.node_id
-        elif state.routing_decision.predicted_route.value == "travel_planner":
+
+        route = state.routing_decision.predicted_route.value
+
+        if route == "travel_planner":
             return self._nf.extract_trip_params_node.node_id
-        elif state.routing_decision.predicted_route.value == "turkish_airlines":
+        elif route == "chitchat":
+            return self._nf.chitchat_node.node_id
+        elif route == "escalation":
+            return self._nf.escalation_node.node_id
+        elif route == "turkish_airlines":
             return self._nf.turkish_airlines_node.node_id
         else:
             return self._nf.escalation_node.node_id

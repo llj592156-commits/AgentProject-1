@@ -7,7 +7,6 @@ from travel_planner.models.router_models import Routes, RoutingDecision
 from travel_planner.models.state import TravelPlannerState
 from travel_planner.nodes.base_node import BaseNode
 from travel_planner.prompts.prompt_handler import PromptTemplates
-from travel_planner.orchestration.strategy import RoutingStrategyRegistry
 
 
 class RouterNode(BaseNode):
@@ -17,20 +16,16 @@ class RouterNode(BaseNode):
     - chitchat: General conversation/questions not related to travel planning
     - escalation: User wants to contact an agent or needs human assistance
     - turkish_airlines: User wants Turkish Airlines specific service
-
-    Uses RoutingStrategyRegistry for intelligent routing decisions.
     """
 
     def __init__(
         self,
         prompt_templates: PromptTemplates,
         llm_models: LLMs,
-        routing_registry: RoutingStrategyRegistry | None = None,
     ):
         super().__init__()
         self.prompt_templates = prompt_templates
         self.llm_models = llm_models
-        self._routing_registry = routing_registry
 
     async def async_run(self, state: TravelPlannerState) -> TravelPlannerState:
         # Use LLM to determine the routing decision

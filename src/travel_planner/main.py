@@ -2,6 +2,10 @@
 from dotenv import load_dotenv
 from langchain_core.runnables import RunnableConfig
 
+import os
+import sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from contextlib import AsyncExitStack
 
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
@@ -10,21 +14,17 @@ from langgraph.graph.state import CompiledStateGraph
 from travel_planner.graphs.travel_planner_graph import TravelPlannerGraph
 from travel_planner.helpers.llm_utils import get_available_llms
 from travel_planner.nodes.node_factory import NodeFactory
-from travel_planner.orchestration.strategy import (
-    RoutingStrategyRegistry,
-    IntentBasedRoutingStrategy,
-)
 from travel_planner.orchestration.orchestrator import SkillOrchestrator
 from travel_planner.prompts.prompt_handler import PromptTemplates
 from travel_planner.settings.settings_handler import AppSettings
 from travel_planner.tools.mcp_client import MCPClientPool
+
 
 # Global resources
 _stack = AsyncExitStack()
 _checkpointer = None
 _mcp_pool: MCPClientPool | None = None
 _skill_orchestrator: SkillOrchestrator | None = None
-_routing_registry: RoutingStrategyRegistry | None = None
 
 
 async def _get_or_create_mcp_pool() -> MCPClientPool:
@@ -52,35 +52,7 @@ async def _get_or_create_mcp_pool() -> MCPClientPool:
             args=["src/travel_planner/mcp_server/hotel_server.py"],
         ))
 
-        # Weather MCP
-        _mcp_pool.register_connection(MCPConnection(
-            name="weather",
-            transport="stdio",
-            command=sys.executable,
-            args=["src/travel_planner/mcp_server/weather_server.py"],
-        ))
-
     return _mcp_pool
-
-
-def _get_or_create_routing_registry() -> RoutingStrategyRegistry:
-    """Get or create the routing strategy registry."""
-    global _routing_registry
-    if _routing_registry is None:
-        _routing_registry = RoutingStrategyRegistry()
-
-        # Register intent-based routing strategy
-        intent_map = {
-            "travel_planner": "extract_trip_params_node",
-            "chitchat": "chitchat_node",
-            "escalation": "escalation_node",
-            "turkish_airlines": "turkish_airlines_node",
-        }
-        _routing_registry.register(
-            IntentBasedRoutingStrategy(intent_map=intent_map)
-        )
-
-    return _routing_registry
 
 
 def _get_or_create_skill_orchestrator() -> SkillOrchestrator:
@@ -91,12 +63,10 @@ def _get_or_create_skill_orchestrator() -> SkillOrchestrator:
 
         # Register skills
         from travel_planner.skills.planning_skill import PlanningSkill
-        from travel_planner.skills.conversation_skill import ConversationSkill
         from travel_planner.skills.info_skill import InfoSkill
         from travel_planner.skills.booking_skill import BookingSkill
 
         _skill_orchestrator.register_skill(PlanningSkill())
-        _skill_orchestrator.register_skill(ConversationSkill())
         _skill_orchestrator.register_skill(InfoSkill())
         _skill_orchestrator.register_skill(BookingSkill())
 
@@ -119,7 +89,6 @@ async def get_compiled_travel_planner_graph() -> CompiledStateGraph:
 
     # Initialize layers
     mcp_pool = await _get_or_create_mcp_pool()  # Tool layer
-    routing_registry = _get_or_create_routing_registry()  # Orchestration layer - Strategy
     skill_orchestrator = _get_or_create_skill_orchestrator()  # Orchestration layer - Skills
 
     # Create node factory with all dependencies injected
@@ -127,7 +96,6 @@ async def get_compiled_travel_planner_graph() -> CompiledStateGraph:
         prompt_templates=prompt_templates,
         llm_models=llm_models,
         mcp_pool=mcp_pool,
-        routing_registry=routing_registry,
         skill_orchestrator=skill_orchestrator,
     )
 
@@ -156,3 +124,62 @@ def get_config(thread_id: str) -> RunnableConfig:
         metadata={"langfuse_session_id": thread_id},
     )
     return config
+
+
+async def main():
+    """Main entry point for testing the travel planner.
+
+    This function demonstrates how to use the travel planner graph
+    with a sample user request.
+    """
+    import asyncio
+
+    # Initialize the compiled graph
+    print("Initializing travel planner graph...")
+    compiled_graph = await get_compiled_travel_planner_graph()
+    print("Graph initialized successfully!\n")
+
+    # Test case 1: Travel planning request
+    print("=" * 50)
+    print("Test 1: Travel Planning Request")
+    print("=" * 50)
+    test_prompt = "帮我规划 6 月 1 日去四川省成都的旅行，预算 100 元"
+    print(f"User: {test_prompt}\n")
+
+    config = get_config(thread_id="test-thread-001")
+
+    try:
+        result = await compiled_graph.ainvoke(
+            input={"user_prompt": test_prompt, "messages": []},
+            config=config,
+        )
+        print(f"AI: {result.get('last_ai_message', 'No response')}\n")
+    except Exception as e:
+        print(f"Error: {e}\n")
+
+    # Test case 2: Chitchat request
+    print("=" * 50)
+    print("Test 2: Chitchat Request")
+    print("=" * 50)
+    test_prompt = "你好，今天天气不错"
+    print(f"User: {test_prompt}\n")
+
+    config = get_config(thread_id="test-thread-002")
+
+    try:
+        result = await compiled_graph.ainvoke(
+            input={"user_prompt": test_prompt, "messages": []},
+            config=config,
+        )
+        print(f"AI: {result.get('last_ai_message', 'No response')}\n")
+    except Exception as e:
+        print(f"Error: {e}\n")
+
+    print("=" * 50)
+    print("Tests completed!")
+    print("=" * 50)
+
+
+if __name__ == "__main__":
+    import asyncio
+    asyncio.run(main())

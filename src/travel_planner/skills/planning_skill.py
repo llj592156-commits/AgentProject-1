@@ -1,8 +1,8 @@
 """Planning Skill - Creates travel itineraries based on user preferences.
 
 Combines:
-- Flight search
-- Hotel search
+- Flight search (via MCP)
+- Hotel search (via MCP)
 - Activity recommendations
 - Budget optimization
 """
@@ -11,7 +11,6 @@ from datetime import date
 from typing import Any
 
 from travel_planner.skills.base_skill import BaseSkill, SkillContext, SkillResult
-from travel_planner.tools.api_gateway import APIGateway
 
 
 class PlanningSkill(BaseSkill):
@@ -30,10 +29,9 @@ class PlanningSkill(BaseSkill):
 
         Steps:
         1. Extract travel parameters from state
-        2. Search for flights (if API available)
-        3. Search for hotels (if API available)
-        4. Generate itinerary using LLM
-        5. Return structured plan
+        2. Get MCP tools for flight/hotel search
+        3. Build context for itinerary generation
+        4. Return structured plan
         """
         self._log_execution("start", "Beginning travel planning")
 
@@ -44,37 +42,13 @@ class PlanningSkill(BaseSkill):
                 error="No travel parameters found in state",
             )
 
-        # Get API gateway if available
-        api_gateway: APIGateway | None = context.get_tool("api_gateway") #从技能状态类获取工具
-
-        # Try to gather real data if APIs are available
-        flight_data = None
-        hotel_data = None
-        weather_data = None
-
-        if api_gateway:
-            try:
-                if travel_params.origin and travel_params.destination:
-                    flight_data = await api_gateway.search_flights(
-                        origin=travel_params.origin,
-                        destination=travel_params.destination,
-                        departure_date=travel_params.date_from,
-                        return_date=travel_params.date_to,
-                    )
-
-                if travel_params.destination:
-                    weather_data = await api_gateway.get_weather(
-                        city=travel_params.destination
-                    )
-            except Exception as e:
-                self._logger.warning(f"API data fetch failed: {e}")
+        # Get MCP pool for tools
+        mcp_pool = context.get_tool("mcp_pool")
 
         # Build context for itinerary generation
         planning_context = {
             "travel_params": travel_params.model_dump(),
-            "flight_data": flight_data.data if flight_data else None,
-            "hotel_data": hotel_data.data if hotel_data else None,
-            "weather_data": weather_data.data if weather_data else None,
+            "mcp_tools_available": mcp_pool is not None,
         }
 
         self._log_execution(
