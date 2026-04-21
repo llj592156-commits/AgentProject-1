@@ -1,5 +1,8 @@
 #ok
 from datetime import datetime
+
+from langchain_core.messages import AIMessage
+
 from travel_planner.helpers.llm_utils import invoke_llm
 from travel_planner.models.available_llm_models import LLMs
 from travel_planner.models.state import TravelParams, TravelPlannerState
@@ -50,12 +53,28 @@ class ExtractTripParamsNode(BaseNode):
                 missing_fields.append(field_name)
 
         if missing_fields:
+            # 参数缺失，生成提示语告知用户需要补充什么
             self.logger.info(
-                f"{self.node_id} | Missing or invalid travel parameters: {missing_fields}"
+                f"{self.node_id} | Missing travel parameters: {missing_fields}"
             )
-            # Mark state as needing user input fixing
+
+            # 生成提示语，告知用户需要补充哪些参数
+            field_names_cn = {
+                "origin": "出发地",
+                "destination": "目的地",
+                "date_from": "出发日期",
+                "date_to": "返回日期",
+                "budget": "预算",
+            }
+            missing_desc = ", ".join([field_names_cn.get(f, f) for f in missing_fields])
+            ai_message = AIMessage(
+                content=f"我还需要以下信息来为您规划旅行：{missing_desc}。请补充这些详细信息。"
+            )
+
             state.travel_params = travel_params  # Save partial params
             state.missing_trip_params = missing_fields
+            state.last_ai_message = ai_message.content
+            state.messages.append(ai_message)
         else:
             # All parameters successfully extracted
             state.travel_params = travel_params

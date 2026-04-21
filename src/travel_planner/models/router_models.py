@@ -4,10 +4,9 @@ from pydantic import BaseModel, Field
 
 
 class Routes(Enum):
-    TRAVEL_PLANNER = "travel_planner" #旅行规划流
-    CHITCHAT = "chitchat" #闲聊流
-    ESCALATION = "escalation" #升级流
-    TURKISH_AIRLINES = "turkish_airlines" #土耳其航空公司流
+    TRAVEL_PLANNER = "travel_planner"  # 旅行规划流
+    CHITCHAT = "chitchat"  # 闲聊流
+    ESCALATION = "escalation"  # 升级流
 
 
 class RoutingDecision(BaseModel):

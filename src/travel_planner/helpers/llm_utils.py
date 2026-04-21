@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TypeVar, cast
 
-from langchain_core.messages import AIMessage, BaseMessage
+from langchain_core.messages import AIMessage, BaseMessage, ToolMessage
 from langchain_core.prompt_values import PromptValue
 from langchain_community.chat_models.tongyi import ChatTongyi
 from pydantic import BaseModel

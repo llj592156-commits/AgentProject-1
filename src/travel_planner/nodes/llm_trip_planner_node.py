@@ -1,32 +1,46 @@
 #ok
 from datetime import datetime
 
-from travel_planner.helpers.llm_utils import invoke_llm
+from langchain_core.messages import AIMessage, SystemMessage
+
 from travel_planner.models.available_llm_models import LLMs
 from travel_planner.models.state import TravelPlannerState
 from travel_planner.nodes.base_node import BaseNode
 from travel_planner.prompts.prompt_handler import PromptTemplates
-from travel_planner.orchestration.orchestrator import SkillOrchestrator
+from travel_planner.tools.mcp_client import MCPClientPool
 
 
 class LLMTripPlannerNode(BaseNode):
     """
-    LLM Trip Planner Node - Uses Skill Orchestrator to plan trips.
+    LLM Trip Planner Node - LLM with tool binding for trip planning.
 
-    Instead of directly calling LLM, this node uses the SkillOrchestrator
-    to execute the PlanningSkill which may use MCP tools.
+    The LLM will:
+    - Decide whether to call tools based on the request
+    - Generate tool_calls for flight/hotel searches
+    - Or generate final response if no tools needed
+
+    Flow:
+    - If LLM generates tool_calls -> ToolNode executes -> back to this node
+    - If LLM generates final response -> finish
     """
 
     def __init__(
         self,
         prompt_templates: PromptTemplates,
         llm_models: LLMs,
-        skill_orchestrator: SkillOrchestrator | None = None,
+        mcp_pool: MCPClientPool | None = None,
     ):
         super().__init__()
         self.prompt_templates = prompt_templates
         self.llm_models = llm_models
-        self._skill_orchestrator = skill_orchestrator
+        self._mcp_pool = mcp_pool
+        self._tools = None
+
+    async def _ensure_tools_loaded(self) -> None:
+        """Load MCP tools for binding."""
+        if self._tools is None and self._mcp_pool:
+            self._tools = await self._mcp_pool.get_tools()
+            self.logger.info(f"LLMTripPlannerNode: Loaded {len(self._tools)} tools for binding")
 
     async def async_run(self, state: TravelPlannerState) -> TravelPlannerState:
         tp = state.travel_params
@@ -41,32 +55,12 @@ class LLMTripPlannerNode(BaseNode):
             self.logger.warning("Missing travel parameters")
             raise ValueError("Missing travel parameters")
 
-        # If skill orchestrator is available, use skills
-        if self._skill_orchestrator:
-            self.logger.info("Using SkillOrchestrator for trip planning")
+        await self._ensure_tools_loaded()
 
-            # Execute planning skill
-            result = await self._skill_orchestrator.execute(
-                state=state,
-                skill_name="planning",
-            )
+        self.logger.info("Generating trip plan with LLM (with tool binding)")
 
-            if result.success and result.data:
-                # Use the skill result to generate final response
-                planning_data = result.data
-
-                # Format the planning data into a readable response
-                response = self._format_planning_response(planning_data)
-                state.last_ai_message = response
-                state.messages.append(
-                    HumanMessage(content=response)  # Or AIMessage if you prefer
-                )
-                return state
-
-        # Fallback: Direct LLM call (backward compatible)
-        self.logger.info("Using direct LLM call for trip planning")
-
-        prompt_value = self.prompt_templates.trip_planner.format_prompt(
+        # Format prompt
+        prompt_text = self.prompt_templates.trip_planner.format(
             today=datetime.today(),
             origin=tp.origin,
             destination=str(tp.destination),
@@ -75,39 +69,24 @@ class LLMTripPlannerNode(BaseNode):
             budget=str(tp.budget),
         )
 
-        ai_message = await invoke_llm(
-            prompt_value=prompt_value,
-            response_model=None,
-            llm=self.llm_models.large_model,
-            messages_history=state.messages,
-        )
-        state.last_ai_message = str(ai_message.content)
+        # Bind tools to LLM if available
+        llm = self.llm_models.large_model
+        if self._tools:
+            llm_with_tools = llm.bind_tools(self._tools)
+        else:
+            llm_with_tools = llm
+
+        # Build messages: system prompt as first message, then conversation history
+        input_messages = [
+            SystemMessage(content=prompt_text),
+            *state.messages,
+        ]
+
+        # Invoke LLM with tools
+        ai_message = await llm_with_tools.ainvoke(input_messages)
+        # Store the message (may contain tool_calls or final response)
         state.messages.append(ai_message)
+        has_tool_calls = getattr(ai_message, "tool_calls", None)
+        state.last_ai_message = str(ai_message.content) if not has_tool_calls else "[工具调用中...]"
+
         return state
-
-    def _format_planning_response(self, data: dict) -> str:
-        """Format planning data into a readable response."""
-        lines = ["🗺️ Your Travel Plan\n"]
-
-        if "summary" in data:
-            summary = data["summary"]
-            lines.append(f"From: {summary.get('origin', 'N/A')} → {summary.get('destination', 'N/A')}")
-            lines.append(f"Duration: {summary.get('duration_days', 0)} days")
-            lines.append(f"Budget: €{summary.get('total_budget', 0)} | Estimated: €{summary.get('estimated_total', 0)}\n")
-
-        if "flight" in data and data["flight"]:
-            flight = data["flight"]
-            lines.append(f"✈️ Flight: {flight.get('flight_number', 'N/A')}")
-            lines.append(f"   {flight.get('departure_time', '')} → {flight.get('arrival_time', '')}\n")
-
-        if "hotel" in data and data["hotel"]:
-            hotel = data["hotel"]
-            lines.append(f"🏨 Hotel: {hotel.get('name', 'N/A')}")
-            lines.append(f"   €{hotel.get('price_per_night', 0)}/night\n")
-
-        if "daily_plan" in data:
-            lines.append("📅 Daily Plan:")
-            for day in data["daily_plan"]:
-                lines.append(f"   Day {day['day']}: {day['activities'][0] if day['activities'] else 'Free time'}")
-
-        return "\n".join(lines)

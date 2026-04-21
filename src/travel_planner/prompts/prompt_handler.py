@@ -29,7 +29,6 @@ def read_yaml_and_parse_chat_prompt(yaml_path: Path) -> ChatPromptTemplate:
 
 class PromptTemplates(BaseModel):
     trip_params_extraction: ChatPromptTemplate  # 旅行参数提取提示模板
-    fix_trip_params_extraction: ChatPromptTemplate  # 修复旅行参数提取提示模板
     trip_planner: ChatPromptTemplate  # 旅行计划器提示模板
     routing_decision: ChatPromptTemplate  # 路由决策提示模板
     chitchat_response: ChatPromptTemplate  # 聊天响应提示模板
@@ -40,9 +39,6 @@ class PromptTemplates(BaseModel):
         return cls(
             trip_params_extraction=read_yaml_and_parse_chat_prompt(
                 yaml_dir / "trip_params_extraction.yaml"
-            ),
-            fix_trip_params_extraction=read_yaml_and_parse_chat_prompt(
-                yaml_dir / "fix_trip_params_extraction.yaml"
             ),
             trip_planner=read_yaml_and_parse_chat_prompt(yaml_dir / "trip_planner.yaml"),
             routing_decision=read_yaml_and_parse_chat_prompt(yaml_dir / "routing_decision.yaml"),
