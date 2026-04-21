@@ -14,7 +14,6 @@ from langgraph.graph.state import CompiledStateGraph
 from travel_planner.graphs.travel_planner_graph import TravelPlannerGraph
 from travel_planner.helpers.llm_utils import get_available_llms
 from travel_planner.nodes.node_factory import NodeFactory
-from travel_planner.orchestration.orchestrator import SkillOrchestrator
 from travel_planner.prompts.prompt_handler import PromptTemplates
 from travel_planner.settings.settings_handler import AppSettings
 from travel_planner.tools.mcp_client import MCPClientPool
