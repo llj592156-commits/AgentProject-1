@@ -1,7 +1,6 @@
 """Weather Skill Implementation - Pure function logic."""
 
 import json
-import re
 from pathlib import Path
 
 import requests
@@ -56,6 +55,7 @@ def _get_weather(input_data: WeatherInput) -> WeatherOutput:
 
         weather_data = data.get("data", {})
         city_info = data.get("cityInfo", {})
+        forecast = weather_data.get("forecast", [])
 
         # 解析实时天气数据
         shidu = weather_data.get("shidu", "")
@@ -74,9 +74,6 @@ def _get_weather(input_data: WeatherInput) -> WeatherOutput:
             except ValueError:
                 pass
 
-        ganmao = weather_data.get("ganmao", "")
-        forecast = ganmao if ganmao else None
-
         # 获取今天预报
         today_forecast = weather_data.get("forecast", [])
         today = today_forecast[0] if today_forecast else {}
@@ -85,6 +82,7 @@ def _get_weather(input_data: WeatherInput) -> WeatherOutput:
 
         return WeatherOutput(
             city=city_info.get("city", f"{input_data.province or ''}{input_data.city}"),
+            time=data.get("time", ""),
             temp=temp,
             condition=condition,
             humidity=humidity,
@@ -124,11 +122,9 @@ def _get_area_code(city: str, province: str | None = None) -> str | None:
         Area code string or None if not found
     """
     # 确定 area_code.json 路径
-    current_file = Path(__file__)
-    project_root = current_file.parent.parent.parent.parent
-    area_code_path = project_root / "travel_planner" / "helpers" / "area_code.json"
+    area_code_path = r"D:\AgentProject\Project-1\langgraph-template-travel-planner\src\travel_planner\helpers\area_code.json"
 
-    if not area_code_path.exists():
+    if not Path(area_code_path).exists():
         return None
 
     with open(area_code_path, "r", encoding="utf-8") as f:
@@ -154,3 +150,7 @@ def _get_area_code(city: str, province: str | None = None) -> str | None:
                 return city_entry.get("编码")
 
     return None
+
+if __name__ == "__main__":
+    weather = run({"city": "成都", "province": "四川省"})
+    print(weather)

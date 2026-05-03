@@ -10,6 +10,7 @@ from travel_planner.nodes.tool_node import ToolNode
 from travel_planner.nodes.trip_params_human_input_node import TripParamsHumanInputNode
 from travel_planner.prompts.prompt_handler import PromptTemplates
 from travel_planner.tools.mcp_client import MCPClientPool
+from travel_planner.tools.skill_tool import create_skill_tools
 
 
 class NodeFactory:
@@ -30,6 +31,8 @@ class NodeFactory:
         self.prompt_templates = prompt_templates  # 提示模板实例
         self.llm_models = llm_models     # LLM 模型实例
         self._mcp_pool = mcp_pool  # Shared MCP connection pool
+        # Initialize skill registry and load skill tools
+        self._skill_tools = create_skill_tools()
 
     @cached_property
     def extract_trip_params_node(self) -> ExtractTripParamsNode:
@@ -70,6 +73,7 @@ class NodeFactory:
             prompt_templates=self.prompt_templates,
             llm_models=self.llm_models,
             mcp_pool=self._mcp_pool,
+            skill_tools=self._skill_tools,
         )
 
     @cached_property
@@ -77,4 +81,5 @@ class NodeFactory:
         """工具节点 - 纯工具执行"""
         return ToolNode(
             mcp_pool=self._mcp_pool,
+            skill_tools=self._skill_tools,
         )

@@ -30,22 +30,27 @@ class ToolNode(BaseNode):
     def __init__(
         self,
         mcp_pool: MCPClientPool | None = None,
+        skill_tools: list | None = None,
     ):
         super().__init__()
         self._mcp_pool = mcp_pool
+        self._skill_tools = skill_tools or []
         self._tools = None
         self._tools_by_name: dict = {}
 
         self.logger.info("ToolNode initialized (pure tool execution mode)")
 
     async def _ensure_tools_loaded(self) -> None:
-        """Load MCP tools if not already done."""
+        """Load MCP tools and Skill tools."""
         if self._tools is None:
             if self._mcp_pool is None:
                 raise ValueError("MCP pool not configured")
             self._tools = await self._mcp_pool.get_tools()
-            self._tools_by_name = {tool.name: tool for tool in self._tools}
-            self.logger.info(f"ToolNode: Loaded {len(self._tools)} tools: {list(self._tools_by_name.keys())}")
+
+        # Merge MCP tools with Skill tools
+        all_tools = (self._tools or []) + self._skill_tools
+        self._tools_by_name = {tool.name: tool for tool in all_tools}
+        self.logger.info(f"ToolNode: Loaded {len(self._tools_by_name)} tools: {list(self._tools_by_name.keys())}")
 
     async def async_run(self, state: TravelPlannerState) -> TravelPlannerState:
         """Execute tools based on the last message's tool_calls.

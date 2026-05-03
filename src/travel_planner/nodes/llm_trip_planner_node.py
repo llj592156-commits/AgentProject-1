@@ -29,18 +29,24 @@ class LLMTripPlannerNode(BaseNode):
         prompt_templates: PromptTemplates,
         llm_models: LLMs,
         mcp_pool: MCPClientPool | None = None,
+        skill_tools: list | None = None,
     ):
         super().__init__()
         self.prompt_templates = prompt_templates
         self.llm_models = llm_models
         self._mcp_pool = mcp_pool
+        self._skill_tools = skill_tools or []
         self._tools = None
 
     async def _ensure_tools_loaded(self) -> None:
-        """Load MCP tools for binding."""
+        """Load MCP tools and Skill tools for binding."""
         if self._tools is None and self._mcp_pool:
             self._tools = await self._mcp_pool.get_tools()
-            self.logger.info(f"LLMTripPlannerNode: Loaded {len(self._tools)} tools for binding")
+            self.logger.info(f"LLMTripPlannerNode: Loaded {len(self._tools)} MCP tools")
+
+        # Merge MCP tools with Skill tools
+        self._all_tools = (self._tools or []) + self._skill_tools
+        self.logger.info(f"LLMTripPlannerNode: Total tools available (MCP + Skills): {len(self._all_tools)}")
 
     async def async_run(self, state: TravelPlannerState) -> TravelPlannerState:
         tp = state.travel_params
@@ -71,8 +77,8 @@ class LLMTripPlannerNode(BaseNode):
 
         # Bind tools to LLM if available
         llm = self.llm_models.large_model
-        if self._tools:
-            llm_with_tools = llm.bind_tools(self._tools)
+        if self._all_tools:
+            llm_with_tools = llm.bind_tools(self._all_tools)
         else:
             llm_with_tools = llm
 

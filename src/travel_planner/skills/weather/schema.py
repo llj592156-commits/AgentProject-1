@@ -29,11 +29,12 @@ class WeatherOutput(BaseModel):
         error: 错误信息（如果有）
     """
     city: str = Field(..., description="完整城市名称")
+    time: str = Field(..., description="当前时间")
     temp: float | None = Field(None, description="实时温度（摄氏度）")
     condition: str | None = Field(None, description="天气状况")
     humidity: int | None = Field(None, description="湿度百分比")
     wind_level: str | None = Field(None, description="风力等级")
     aqi: int | None = Field(None, description="空气质量指数")
-    forecast: str | None = Field(None, description="天气预报摘要")
+    forecast: list | None = Field(None, description="天气预报摘要")
     success: bool = Field(True, description="是否成功获取数据")
     error: str | None = Field(None, description="错误信息")

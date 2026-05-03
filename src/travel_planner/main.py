@@ -116,7 +116,7 @@ async def main():
     print("=" * 50)
     print("Test 1: Travel Planning Request")
     print("=" * 50)
-    test_prompt = "帮我规划 6 月 1 日去四川省成都的旅行，预算 10000 元"
+    test_prompt = "我要去6月1日要去成都旅游，预算10000元"
 
     config = get_config(thread_id="test-thread-001")
 
@@ -135,7 +135,7 @@ async def main():
     print("=" * 50)
     test_prompt = "我将从上海出发，预计6月5日返回"
 
-    # config = get_config(thread_id="test-thread-001")
+    config = get_config(thread_id="test-thread-001")
 
     try:
         result = await compiled_graph.ainvoke(
