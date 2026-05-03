@@ -43,12 +43,15 @@ class SkillTool(BaseTool):
         meta = skill.metadata
         args_schema = skill.input_schema or cls._default_input_schema()
 
-        return cls(
+        # Create instance first
+        tool = cls(
             name=meta.id.replace("skill_", "") if meta.id.startswith("skill_") else meta.id,
             description=meta.description,
             args_schema=args_schema,
-            _skill=skill,
         )
+        # Then set _skill directly (cannot pass to __init__ as Pydantic filters unknown fields)
+        tool._skill = skill  # type: ignore
+        return tool
 
     @staticmethod
     def _default_input_schema() -> Type[BaseModel]:
@@ -61,20 +64,13 @@ class SkillTool(BaseTool):
 
         return DefaultInput
 
-    def __init__(self, **kwargs: Any):
-        # Extract _skill before passing to parent
-        self._skill = kwargs.pop("_skill", None)
-        super().__init__(**kwargs)
-
     def _run(self, **kwargs) -> Any:
         """Synchronous execution."""
         import asyncio
         try:
             loop = asyncio.get_running_loop()
-            # If we're already in an event loop, return a coroutine
-            return self._ainvoke(kwargs)
+            return asyncio.create_task(self._ainvoke(kwargs))
         except RuntimeError:
-            # No event loop running, use asyncio.run
             return asyncio.run(self._ainvoke(kwargs))
 
     async def _ainvoke(self, input_data: dict, **kwargs: Any) -> Any:

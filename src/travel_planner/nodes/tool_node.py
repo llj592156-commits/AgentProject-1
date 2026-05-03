@@ -102,6 +102,10 @@ class ToolNode(BaseNode):
                         result = str(tool_result.content)
                     else:
                         result = str(tool_result)
+
+                    # # Log successful tool execution with result preview
+                    # result_preview = result[:200] + "..." if len(result) > 200 else result
+                    # self.logger.info(f"ToolNode: Tool '{tool_name}' executed successfully. Result: {result_preview}")
                 except Exception as e:
                     self.logger.error(f"ToolNode: Tool '{tool_name}' execution failed: {e}")
                     result = f"Error: {str(e)}"

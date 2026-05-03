@@ -11,7 +11,7 @@ class WeatherInput(BaseModel):
         province: 省份名称（如"四川省"、"江苏省"），可选
     """
     city: str = Field(..., description="城市名称，如'成都'、'苏州'")
-    province: str | None = Field(None, description="省份名称，如'四川省'、'江苏省'")
+    province: str  = Field(..., description="省份名称，如'四川省'、'江苏省'")
 
 
 class WeatherOutput(BaseModel):
