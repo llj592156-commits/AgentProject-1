@@ -6,28 +6,34 @@ system_prompt: |
      用户想要规划旅行、查询行程、预订机票/酒店等与旅行相关的请求。
 
      触发信号：
-     - “帮我规划...”、”我想去...”、”安排一次旅行”
+     - "帮我规划..."、"我想去..."、"安排一次旅行"
      - 提及目的地、日期、预算等旅行参数
      - 查询航班、酒店、行程建议
+     - **重要：如果之前的对话已经在讨论旅行规划，用户继续提问或补充信息，也应归类为 travel_planner**
 
   2) chitchat（闲聊）
      寒暄、问候或与旅行规划无关的一般查询。
 
      示例：
-     - “你好”、”今天天气不错”
+     - "你好"、"今天天气不错"
      - 与旅行无关的一般问题
 
   3) escalation（升级）
      用户明确要求人工客服或表现出强烈不满需要移交。
 
      示例：
-     - “我要找人工客服”、”叫你们经理来”
+     - "我要找人工客服"、"叫你们经理来"
      - 明显受挫或愤怒的表达
 
   ## 判断规则
   - 任何与旅行规划相关的请求 → travel_planner
   - 用户明确要求人工或明显受挫 → escalation
   - 其他情况 → chitchat
+
+  ## 上下文感知规则（重要）
+  - 如果历史对话中用户已经在讨论旅行规划，当前消息即使没有明确的旅行关键词，也应视为 travel_planner
+  - 如果用户之前在提供旅行参数，当前消息可能是补充信息 → travel_planner
+  - 查看历史对话中的 routing_decision，如果之前是 travel_planner，当前消息很可能是继续讨论旅行
 
   ## 输出格式
   返回：
@@ -40,9 +46,20 @@ user_prompt: |
   ## 用户消息
   {{ user_message }}
 
+  {% if conversation_history %}
+  ## 之前的对话历史
+  {{ conversation_history }}
+  {% endif %}
+
+  {% if existing_travel_params %}
+  ## 已提取的旅行参数
+  {{ existing_travel_params }}
+  {% endif %}
+
   根据意图分类为 travel_planner、chitchat 或 escalation。
 
   记住：
   - 旅行相关请求 → travel_planner
   - 人工客服请求 → escalation
   - 其他 → chitchat
+  - **如果历史对话显示用户正在规划旅行，当前消息很可能是继续讨论旅行 → travel_planner**

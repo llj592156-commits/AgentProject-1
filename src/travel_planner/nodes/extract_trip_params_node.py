@@ -24,9 +24,16 @@ class ExtractTripParamsNode(BaseNode):
 
     #异步运行
     async def async_run(self, state: TravelPlannerState) -> TravelPlannerState:  # type: ignore[override]
+        # Build existing params summary for the prompt
+        existing_params = self._build_existing_params_summary(state.travel_params)
+        missing_params_list = self._get_missing_params_list(state.travel_params)
+
         # Try to extract travel parameters using OpenAI structured output
         prompt_value = self.prompt_templates.trip_params_extraction.format_prompt(
-            user_message=state.user_prompt, today=datetime.today()
+            user_message=state.user_prompt,
+            today=datetime.today(),
+            existing_params=existing_params,
+            missing_params=missing_params_list,
         ) # 格式化提示模板 ，将用户提示和当前日期格式化为提示模板
 
 
@@ -71,13 +78,11 @@ class ExtractTripParamsNode(BaseNode):
                 content=f"我还需要以下信息来为您规划旅行：{missing_desc}。请补充这些详细信息。"
             )
 
-            state.travel_params = travel_params  # Save partial params
             state.missing_trip_params = missing_fields
             state.last_ai_message = ai_message.content
             state.messages.append(ai_message)
         else:
             # All parameters successfully extracted
-            state.travel_params = travel_params
             state.missing_trip_params = []
 
             self.logger.info(
@@ -88,6 +93,52 @@ class ExtractTripParamsNode(BaseNode):
                 travel_params.date_to,
                 travel_params.budget,
             )
+
+        # Merge with existing params to preserve previously collected information
+        # and update state.travel_params
+        if state.travel_params:
+            travel_params = self._merge_travel_params(state.travel_params, travel_params)
+
+        state.travel_params = travel_params
         return state
+
+    def _build_existing_params_summary(self, travel_params) -> dict | None:
+        """
+        Build a dict of existing travel parameters for the prompt.
+        Returns None if no existing params.
+        """
+        if not travel_params:
+            return None
+
+        params_dict = travel_params.model_dump() if hasattr(travel_params, 'model_dump') else {}
+        if not params_dict or all(v is None for v in params_dict.values()):
+            return None
+
+        return params_dict
+
+    def _get_missing_params_list(self, travel_params) -> list[str]:
+        """
+        Get a list of missing parameter names.
+        """
+        if not travel_params:
+            return ["origin", "destination", "date_from", "date_to", "budget"]
+
+        params_dict = travel_params.model_dump() if hasattr(travel_params, 'model_dump') else {}
+        return [k for k, v in params_dict.items() if v is None]
+
+    def _merge_travel_params(self, existing: TravelParams, new: TravelParams) -> TravelParams:
+        """
+        Merge new params into existing params.
+        New values override existing ones, but None values in new don't erase existing values.
+        """
+        existing_dict = existing.model_dump()
+        new_dict = new.model_dump()
+
+        merged_dict = {}
+        for key in existing_dict.keys():
+            # Use new value if provided, otherwise keep existing value
+            merged_dict[key] = new_dict.get(key) if new_dict.get(key) is not None else existing_dict.get(key)
+
+        return TravelParams(**merged_dict)
 
 

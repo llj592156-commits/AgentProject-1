@@ -73,6 +73,7 @@ class LLMTripPlannerNode(BaseNode):
             date_from=str(tp.date_from),
             date_to=str(tp.date_to),
             budget=str(tp.budget),
+            user_question=state.user_prompt,
         )
 
         # Bind tools to LLM if available

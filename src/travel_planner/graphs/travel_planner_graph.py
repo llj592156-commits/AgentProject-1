@@ -3,7 +3,7 @@ from __future__ import annotations  # 启用类型提示
 from langgraph.graph import StateGraph
 
 from travel_planner.helpers.logs import get_logger
-from travel_planner.models.state import TravelPlannerState
+from travel_planner.models.state import TravelParams, TravelPlannerState
 from travel_planner.nodes.node_factory import NodeFactory
 
 
@@ -92,7 +92,7 @@ class TravelPlannerGraph:
         # Set router as entry point
         graph.set_entry_point(self._nf.router_node.node_id)
 
-        # Router branches to chitchat, escalation, or extract_trip_params
+        # Router branches to chitchat, escalation, extract_trip_params, or llm_trip_planner
         graph.add_conditional_edges(
             self._nf.router_node.node_id,
             self._decide_next_route,
@@ -100,6 +100,7 @@ class TravelPlannerGraph:
                 self._nf.chitchat_node.node_id: self._nf.chitchat_node.node_id,
                 self._nf.escalation_node.node_id: self._nf.escalation_node.node_id,
                 self._nf.extract_trip_params_node.node_id: self._nf.extract_trip_params_node.node_id,
+                self._nf.llm_trip_planner_node.node_id: self._nf.llm_trip_planner_node.node_id,
             },
         )
 
@@ -152,6 +153,8 @@ class TravelPlannerGraph:
     def _decide_next_route(self, state: TravelPlannerState) -> str:
         """
         Decide the next node using routing decision from RouterNode.
+        If routing decision is travel_planner and we already have complete params,
+        go directly to LLM trip planner.
         """
         if state.routing_decision is None:
             return self._nf.chitchat_node.node_id
@@ -159,6 +162,10 @@ class TravelPlannerGraph:
         route = state.routing_decision.predicted_route.value
 
         if route == "travel_planner":
+            # Check if we already have complete travel params from previous conversation
+            if state.travel_params and self._has_complete_params(state.travel_params):
+                self.logger.info("Complete travel params already exist, skipping extraction")
+                return self._nf.llm_trip_planner_node.node_id
             return self._nf.extract_trip_params_node.node_id
         elif route == "chitchat":
             return self._nf.chitchat_node.node_id
@@ -166,3 +173,11 @@ class TravelPlannerGraph:
             return self._nf.escalation_node.node_id
         else:
             return self._nf.escalation_node.node_id
+
+    def _has_complete_params(self, travel_params: TravelParams) -> bool:
+        """
+        Check if travel params has all required fields.
+        """
+        params_dict = travel_params.model_dump() if hasattr(travel_params, 'model_dump') else {}
+        required_fields = ["origin", "destination", "date_from", "date_to", "budget"]
+        return all(params_dict.get(field) is not None for field in required_fields)
